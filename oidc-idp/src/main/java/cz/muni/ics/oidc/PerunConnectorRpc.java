@@ -63,6 +63,32 @@ public class PerunConnectorRpc implements PerunConnector {
 		return makeRpcCall("/usersManager/getRichUserWithAttributes", map);
 	}
 
+	@Override
+	public JsonNode getFacilityByClientId(String clientId) {
+		log.trace("getFacilityByClientId({})", clientId);
+		Map<String, Object> map = new LinkedHashMap<>();
+		String OIDCAtttrClientId = "urn:perun:facility:attribute-def:def:OIDCClientID";
+		map.put("attrName", OIDCAtttrClientId);
+		map.put("attrValue", clientId);
+		return makeRpcCall("/facilitiesManager/getFacilitiesByAttribute", map);
+	}
+
+	@Override
+	public JsonNode getGroupsForFacility(Long facilityId) {
+		log.trace("getGroupsForFacility({})", facilityId);
+		Map<String, Object> map = new LinkedHashMap<>();
+		map.put("facility", facilityId);
+		return makeRpcCall("/facilitiesManager/getAllowedGroups", map);
+	}
+
+	@Override
+	public JsonNode getGroupMembers(Long groupId) {
+		log.trace("getGroupMembers({})", groupId);
+		Map<String, Object> map = new LinkedHashMap<>();
+		map.put("group", groupId);
+		return makeRpcCall("/groupsManager/getGroupMembers", map);
+	}
+
 	private JsonNode makeRpcCall(String urlPart, Map<String, Object> map) {
 		//prepare basic auth
 		RestTemplate restTemplate = new RestTemplate();

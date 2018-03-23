@@ -13,4 +13,9 @@ public interface PerunConnector {
 
 	JsonNode getUserAttributes(Long userId);
 
+	JsonNode getFacilityByClientId(String clientId);
+
+	JsonNode getGroupsForFacility(Long facilityId);
+
+	JsonNode getGroupMembers(Long l);
 }
