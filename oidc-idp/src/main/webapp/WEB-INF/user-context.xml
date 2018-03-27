@@ -21,9 +21,8 @@
 				<prop key="main.oidc.issuer.url">https://perun-dev.meta.zcu.cz/oidc/</prop>
 				<prop key="logo.image.url">resources/images/perun_24px.png</prop>
 				<prop key="topbar.title">Perun OIDC</prop>
-				<prop key="perun.rpc.url">https://perun.elixir-czech.cz/krb/rpc</prop>
-				<prop key="perun.rpc.user">xxxxx</prop>
-				<prop key="perun.rpc.password">yyyyy</prop>
+				<prop key="perun.ldap.base">dc=perun,dc=cesnet,dc=cz</prop>
+				<prop key="perun.ldap.url">ldaps://elixir.ics.muni.cz</prop>
 				<prop key="jdbc.driver">org.mariadb.jdbc.Driver</prop>
 				<prop key="jdbc.url">jdbc:mariadb://localhost:3306/oidc</prop>
 				<prop key="jdbc.user">oidc</prop>
@@ -33,6 +32,9 @@
 				<prop key="admins">3197,59835</prop>
 				<prop key="attribute.openid.sub">urn:perun:user:attribute-def:core:id</prop>
 				<prop key="attribute.profile.preferred_username">urn:perun:user:attribute-def:def:login-namespace:einfra</prop>
+				<prop key="attribute.profile.name">urn:perun:user:attribute-def:core:displayName</prop>
+				<prop key="attribute.profile.given_name">urn:perun:user:attribute-def:core:firstName</prop>
+				<prop key="attribute.profile.family_name">urn:perun:user:attribute-def:core:lastName</prop>
 				<prop key="attribute.profile.zoneinfo">urn:perun:user:attribute-def:def:timezone</prop>
 				<prop key="attribute.profile.locale">urn:perun:user:attribute-def:def:preferredLanguage</prop>
 				<prop key="attribute.email.email">urn:perun:user:attribute-def:def:preferredMail</prop>
@@ -57,11 +59,23 @@
 		<property name="ignoreResourceNotFound" value="false"/>
 	</bean>
 
+	<bean id="contextSource" class="org.springframework.ldap.core.support.LdapContextSource">
+		 <property name="url" value="${perun.ldap.url}" />
+	</bean>
+
+	<bean id="ldapTemplate" class="org.springframework.ldap.core.LdapTemplate">
+		<constructor-arg ref="contextSource" />
+	</bean>
+
 
 	<!-- defines our own user data source -->
 	<bean id="perunUserInfoRepository" primary="true" class="cz.muni.ics.oidc.PerunUserInfoRepository">
 		<property name="perunConnector" ref="perunConnector"/>
-		<property name="subAttribute" value="${attribute.openid.sub}"/>
+		<property name="template" ref="ldapTemplate" />
+		<property name="nameAttribute" value="${attribute.profile.name}"/>
+		<property name="givenNameAttribute" value="${attribute.profile.given_name}"/>
+		<property name="familyNameAttribute" value="${attribute.profile.family_name}"/>
+ 		<property name="subAttribute" value="${attribute.openid.sub}"/>
 		<property name="preferredUsernameAttribute" value="${attribute.profile.preferred_username}"/>
 		<property name="emailAttribute" value="${attribute.email.email}"/>
 		<property name="addressAttribute" value="${attribute.address.address.formatted}"/>
@@ -82,7 +96,8 @@
 	</bean>
 
 	<bean id="perunOidcConfig" class="cz.muni.ics.oidc.PerunOidcConfig">
-		<property name="rpcUrl" value="${perun.rpc.url}"/>
+		<property name="ldapUrl" value="${perun.ldap.url}"/>
+		<property name="ldapBase" value="${perun.ldap.base}"/>
 		<property name="configBean" ref="configBean"/>
 		<property name="jwk" value="${jwk}"/>
 		<property name="jdbcUrl" value="${jdbc.url}"/>
@@ -130,10 +145,9 @@
 	</bean>
 
 	<!-- communicates with Perun -->
-	<bean id="perunConnector" class="cz.muni.ics.oidc.PerunConnectorRpc">
-		<property name="perunUrl" value="${perun.rpc.url}"/>
-		<property name="perunUser" value="${perun.rpc.user}"/>
-		<property name="perunPassword" value="${perun.rpc.password}"/>
+	<bean id="perunConnector" class="cz.muni.ics.oidc.PerunConnector">
+		<property name="ldapUrl" value="${perun.ldap.url}"/>
+		<property name="ldapBase" value="${perun.ldap.base}"/>
 	</bean>
 
 
