@@ -195,15 +195,16 @@ public class PerunUserInfoRepository implements UserInfoRepository {
 		andFilter.and(objClassFilter).and(subFilter);
 		List<PerunUserInfo> res = template.search(
 				perunConnector.getLdapBase(), andFilter.encode(), new PerunUserContextMapper());
-
+  
 		if (res.size() == 1) {
 			return res.get(0);
 		} else {
 			throw new IllegalArgumentException("User not found: " + userId);
 		}
+
 	}
 
-	public class PerunUserContextMapper implements ContextMapper<PerunUserInfo> {
+	private class PerunUserContextMapper implements ContextMapper<PerunUserInfo> {
 		@Override
 		public PerunUserInfo mapFromContext(Object ctx) throws NamingException {
 			DirContextAdapter context = (DirContextAdapter) ctx;
@@ -211,7 +212,7 @@ public class PerunUserInfoRepository implements UserInfoRepository {
 			if (context.getStringAttribute(subAttribute) == null) {
 				return null;
 			}
-
+            
 			PerunUserInfo ui = new PerunUserInfo();
 			ui.setSub(context.getStringAttribute(subAttribute));
 			ui.setName(context.getStringAttribute(nameAttribute));
@@ -231,7 +232,7 @@ public class PerunUserInfoRepository implements UserInfoRepository {
 				val = val.substring(1, val.length() - 1);
 				ui.getCustomClaims().put(pccd.getClaim(), val);
 			}
-
+            
 			return ui;
 		}
 	}

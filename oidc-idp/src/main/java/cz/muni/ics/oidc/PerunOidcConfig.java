@@ -24,7 +24,8 @@ public class PerunOidcConfig {
 	private static final String MITREID_POM_FILE = "/META-INF/maven/org.mitre/openid-connect-server-webapp/pom.properties";
 
 	private ConfigurationPropertiesBean configBean;
-	private String rpcUrl;
+	private String ldapUrl;
+	private String ldapBase;
 	private String jwk;
 	private String jdbcUrl;
 
@@ -34,8 +35,12 @@ public class PerunOidcConfig {
 	@Autowired
 	private Properties coreProperties;
 
-	public void setRpcUrl(String rpcUrl) {
-		this.rpcUrl = rpcUrl;
+	public void setLdapUrl(String ldapUrl) {
+		this.ldapUrl = ldapUrl;
+	}
+
+	public void setLdapBase(String ldapBase) {
+		this.ldapBase = ldapBase;
 	}
 
 	public void setConfigBean(ConfigurationPropertiesBean configBean) {
@@ -54,7 +59,8 @@ public class PerunOidcConfig {
 	public void postInit() {
 		log.info("Perun OIDC initialized");
 		log.info("Mitreid config URL: {}", configBean.getIssuer());
-		log.info("RPC URL: {}", rpcUrl);
+		log.info("LDAP URL: {}", ldapUrl);
+		log.info("LDAP BASE: {}", ldapBase);
 		log.info("JSON Web Keys: {}", jwk);
 		log.info("JDBC URL: {}",jdbcUrl);
 		log.info("accessTokenClaimsModifier: {}", coreProperties.getProperty("accessTokenClaimsModifier"));

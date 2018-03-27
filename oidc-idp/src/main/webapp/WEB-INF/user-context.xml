@@ -96,7 +96,8 @@
 	</bean>
 
 	<bean id="perunOidcConfig" class="cz.muni.ics.oidc.PerunOidcConfig">
-		<property name="rpcUrl" value="${perun.ldap.url}"/>
+		<property name="ldapUrl" value="${perun.ldap.url}"/>
+		<property name="ldapBase" value="${perun.ldap.base}"/>
 		<property name="configBean" ref="configBean"/>
 		<property name="jwk" value="${jwk}"/>
 		<property name="jdbcUrl" value="${jdbc.url}"/>
