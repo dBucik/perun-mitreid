@@ -11,12 +11,15 @@ import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.repository.UserInfoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ldap.core.ContextMapper;
+import org.springframework.ldap.core.DirContextAdapter;
+import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.filter.AndFilter;
+import org.springframework.ldap.filter.EqualsFilter;
+import org.springframework.ldap.filter.Filter;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import javax.naming.NamingException;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +34,7 @@ public class PerunUserInfoRepository implements UserInfoRepository {
 
 	private PerunConnector perunConnector;
 	private Properties properties;
+	private LdapTemplate template;
 
 	public void setPerunConnector(PerunConnector perunConnector) {
 		this.perunConnector = perunConnector;
@@ -38,11 +42,16 @@ public class PerunUserInfoRepository implements UserInfoRepository {
 
 	private String subAttribute;
 	private String preferredUsernameAttribute;
+	private String nameAttribute;
+	private String givenNameAttribute;
+	private String familyNameAttribute;
 	private String emailAttribute;
 	private String addressAttribute;
 	private String phoneAttribute;
 	private String zoneinfoAttribute;
 	private String localeAttribute;
+	private String extSourceAttribute;
+	private String extLoginAttribute;
 	private List<PerunCustomClaimDefinition> customClaims = new ArrayList<>();
 
 	public void setSubAttribute(String subAttribute) {
@@ -51,6 +60,30 @@ public class PerunUserInfoRepository implements UserInfoRepository {
 
 	public void setPreferredUsernameAttribute(String preferredUsernameAttribute) {
 		this.preferredUsernameAttribute = preferredUsernameAttribute;
+	}
+
+	public void setTemplate(LdapTemplate template) {
+		this.template = template;
+	}
+
+	public void setNameAttribute(String nameAttribute) {
+		this.nameAttribute = nameAttribute;
+	}
+
+	public void setGivenNameAttribute(String givenNameAttribute) {
+		this.givenNameAttribute = givenNameAttribute;
+	}
+
+	public void setFamilyNameAttribute(String familyNameAttribute) {
+		this.familyNameAttribute = familyNameAttribute;
+	}
+
+	public void setExtSourceAttribute(String extSourceAttribute) {
+		this.extSourceAttribute = extSourceAttribute;
+	}
+
+	public void setExtLoginAttribute(String extLoginAttribute) {
+		this.extLoginAttribute = extLoginAttribute;
 	}
 
 	public void setEmailAttribute(String emailAttribute) {
@@ -128,46 +161,7 @@ public class PerunUserInfoRepository implements UserInfoRepository {
 		@Override
 		public UserInfo load(String username) throws Exception {
 			log.trace("load({})", username);
-			PerunUserInfo ui = new PerunUserInfo();
-			JsonNode result = perunConnector.getUserAttributes(Long.parseLong(username));
-			//process
-			RichUser richUser = new RichUser(result);
-
-			String sub = richUser.get(subAttribute);
-			if (sub == null) {
-				throw new RuntimeException("cannot get sub from attribute " + subAttribute + " for username " + username);
-			}
-			ui.setSub(sub); // Subject - Identifier for the End-User at the Issuer.
-
-			ui.setPreferredUsername(richUser.get(preferredUsernameAttribute)); // Shorthand name by which the End-User wishes to be referred to at the RP
-			ui.setGivenName(richUser.get("urn:perun:user:attribute-def:core:firstName")); //  Given name(s) or first name(s) of the End-User
-			ui.setFamilyName(richUser.get("urn:perun:user:attribute-def:core:lastName")); // Surname(s) or last name(s) of the End-User
-			ui.setMiddleName(richUser.get("urn:perun:user:attribute-def:core:middleName")); //  Middle name(s) of the End-User
-			ui.setName(richUser.get("urn:perun:user:attribute-def:core:displayName")); // End-User's full name
-			//ui.setNickname(); // Casual name of the End-User
-			//ui.setProfile(); //  URL of the End-User's profile page.
-			//ui.setPicture(); // URL of the End-User's profile picture.
-			//ui.setWebsite(); // URL of the End-User's Web page or blog.
-			ui.setEmail(richUser.get(emailAttribute)); // End-User's preferred e-mail address.
-			//ui.setEmailVerified(true); // True if the End-User's e-mail address has been verified
-			//ui.setGender("male"); // End-User's gender. Values defined by this specification are female and male.
-			//ui.setBirthdate("1975-01-01");//End-User's birthday, represented as an ISO 8601:2004 [ISO8601‑2004] YYYY-MM-DD format.
-			ui.setZoneinfo(richUser.get(zoneinfoAttribute));//String from zoneinfo [zoneinfo] time zone database, For example, Europe/Paris
-			ui.setLocale(richUser.get(localeAttribute)); //  For example, en-US or fr-CA.
-			ui.setPhoneNumber(richUser.get(phoneAttribute)); //[E.164] is RECOMMENDED as the format, for example, +1 (425) 555-121
-			//ui.setPhoneNumberVerified(true); // True if the End-User's phone number has been verified
-			//ui.setUpdatedTime(Long.toString(System.currentTimeMillis()/1000L));// value is a JSON number representing the number of seconds from 1970-01-01T0:0:0Z as measured in UTC until the date/time
-			Address address = new DefaultAddress();
-			address.setFormatted(richUser.get(addressAttribute));
-			//address.setStreetAddress("Šumavská 15");
-			//address.setLocality("Brno");
-			//address.setPostalCode("61200");
-			//address.setCountry("Czech Republic");
-			ui.setAddress(address);
-			//custom claims
-			for (PerunCustomClaimDefinition pccd : customClaims) {
-				ui.getCustomClaims().put(pccd.getClaim(), richUser.getJson(pccd.getPerunAttributeName()));
-			}
+			PerunUserInfo ui = getUserById(username);
 			log.trace("user loaded");
 			return ui;
 		}
@@ -177,30 +171,65 @@ public class PerunUserInfoRepository implements UserInfoRepository {
 		this.properties = properties;
 	}
 
-	private static class RichUser {
-		Map<String, JsonNode> map = new HashMap<>();
+	public UserInfo getUserByPrincipal(PerunPrincipal perunPrincipal) {
+		Filter extSource = new EqualsFilter(extSourceAttribute, perunPrincipal.getExtSourceName());
+		Filter extLogin = new EqualsFilter(extLoginAttribute, perunPrincipal.getExtLogin());
+		AndFilter filter = new AndFilter();
+		filter.and(extLogin).and(extSource);
 
-		RichUser(JsonNode jsonNode) {
-			log.trace("parsing user attributes");
-			for (JsonNode ua : jsonNode.path("userAttributes")) {
-				String attributeName = ua.path("namespace").asText() + ":" + ua.path("friendlyName").asText();
-				JsonNode value = ua.path("value");
-				log.trace("got user attribute {} = {}", attributeName, value);
-				map.put(attributeName, value);
-			}
-		}
+		List<PerunUserInfo> res = template.search(
+			perunConnector.getLdapBase(), filter.encode(), new PerunUserContextMapper());
 
-		JsonNode getJson(String s) {
-			return map.get(s);
-		}
-
-		String get(String s) {
-			JsonNode jsonNode = map.get(s);
-			if (jsonNode == null) return null;
-			if (jsonNode.isNull()) return null;
-			return jsonNode.asText();
+		if (res.size() == 1) {
+			return res.get(0);
+		} else {
+			throw new IllegalArgumentException("User not found: " + perunPrincipal);
 		}
 	}
 
+	public PerunUserInfo getUserById(String userId) {
+		Filter filter = new EqualsFilter(subAttribute, userId);
+		List<PerunUserInfo> res = template.search(
+				perunConnector.getLdapBase(), filter.encode(), new PerunUserContextMapper());
 
+		if (res.size() == 1) {
+			return res.get(0);
+		} else {
+			throw new IllegalArgumentException("User not found: " + userId);
+		}
+
+	}
+
+	private class PerunUserContextMapper implements ContextMapper<PerunUserInfo> {
+		@Override
+		public PerunUserInfo mapFromContext(Object ctx) throws NamingException {
+			DirContextAdapter context = (DirContextAdapter) ctx;
+
+			if (context.getStringAttribute(subAttribute) == null) {
+				return null;
+			}
+
+			PerunUserInfo ui = new PerunUserInfo();
+			ui.setSub(context.getStringAttribute(subAttribute));
+			ui.setName(context.getStringAttribute(nameAttribute));
+			ui.setPreferredUsername(context.getStringAttribute(preferredUsernameAttribute));
+			ui.setFamilyName(context.getStringAttribute(familyNameAttribute));
+			ui.setGivenName(context.getStringAttribute(givenNameAttribute));
+			ui.setEmail(context.getStringAttribute(emailAttribute));
+			ui.setPhoneNumber(context.getStringAttribute(phoneAttribute));
+			ui.setZoneinfo(context.getStringAttribute(zoneinfoAttribute));
+			ui.setLocale(context.getStringAttribute(localeAttribute));
+			Address address = new DefaultAddress();
+			address.setFormatted(context.getStringAttribute(addressAttribute));
+			ui.setAddress(address);
+			for (PerunCustomClaimDefinition pccd : customClaims) {
+				String[] vals = context.getStringAttributes(pccd.getPerunAttributeName());
+				String val = Arrays.toString(vals);
+				val = val.substring(1, val.length() - 1);
+				ui.getCustomClaims().put(pccd.getClaim(), val);
+			}
+
+			return ui;
+		}
+	}
 }

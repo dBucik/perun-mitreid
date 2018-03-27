@@ -1,16 +1,28 @@
 package cz.muni.ics.oidc;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * Connects to Perun and obtains information.
- *
- * @author Martin Kuba makub@ics.muni.cz
- */
-public interface PerunConnector {
+public class PerunConnector {
 
-	JsonNode getPreauthenticatedUserId(PerunPrincipal perunPrincipal);
+    private final static Logger log = LoggerFactory.getLogger(PerunConnector.class);
 
-	JsonNode getUserAttributes(Long userId);
+    private String ldapUrl;
+    private String ldapBase;
 
+    public void setLdapUrl(String ldapUrl) {
+        this.ldapUrl = ldapUrl;
+    }
+
+    public void setLdapBase(String ldapBase) {
+        this.ldapBase = ldapBase;
+    }
+
+    public String getLdapUrl() {
+        return ldapUrl;
+    }
+
+    public String getLdapBase() {
+        return ldapBase;
+    }
 }

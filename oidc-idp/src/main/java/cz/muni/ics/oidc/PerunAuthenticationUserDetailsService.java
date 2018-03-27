@@ -1,6 +1,6 @@
 package cz.muni.ics.oidc;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import org.mitre.openid.connect.model.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.GrantedAuthority;
@@ -28,6 +28,7 @@ public class PerunAuthenticationUserDetailsService implements AuthenticationUser
 	private static GrantedAuthority ROLE_ADMIN = new SimpleGrantedAuthority("ROLE_ADMIN");
 
 	private PerunConnector perunConnector;
+	private PerunUserInfoRepository perunUserInfoRepository;
 
 	public void setPerunConnector(PerunConnector perunConnector) {
 		this.perunConnector = perunConnector;
@@ -63,10 +64,10 @@ public class PerunAuthenticationUserDetailsService implements AuthenticationUser
 			throw new UsernameNotFoundException("PerunPrincipal is null");
 		}
 		try {
-			JsonNode result = perunConnector.getPreauthenticatedUserId(perunPrincipal);
-			Long userId = result.path("id").asLong();
-			String firstname = result.path("firstName").asText();
-			String lastname = result.path("lastName").asText();
+			UserInfo result = perunUserInfoRepository.getUserByPrincipal(perunPrincipal);
+			Long userId = Long.parseLong(result.getSub());
+			String firstname = result.getGivenName();
+			String lastname = result.getFamilyName();
 			log.info("User {} {} {} logged in", userId, firstname, lastname);
 
 			log.trace("setting user role for {}", userId);
