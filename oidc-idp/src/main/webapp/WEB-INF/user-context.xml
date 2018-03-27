@@ -61,7 +61,6 @@
 
 	<bean id="contextSource" class="org.springframework.ldap.core.support.LdapContextSource">
 		 <property name="url" value="${perun.ldap.url}" />
-		 <property name="base" value="${perun.ldap.base}" />
 	</bean>
 
 	<bean id="ldapTemplate" class="org.springframework.ldap.core.LdapTemplate">

@@ -172,10 +172,11 @@ public class PerunUserInfoRepository implements UserInfoRepository {
 	}
 
 	public UserInfo getUserByPrincipal(PerunPrincipal perunPrincipal) {
+		Filter objClassFilter = new EqualsFilter("objectclass", "perunUser");
 		Filter extSource = new EqualsFilter(extSourceAttribute, perunPrincipal.getExtSourceName());
 		Filter extLogin = new EqualsFilter(extLoginAttribute, perunPrincipal.getExtLogin());
 		AndFilter filter = new AndFilter();
-		filter.and(extLogin).and(extSource);
+		filter.and(objClassFilter).and(extLogin).and(extSource);
 
 		List<PerunUserInfo> res = template.search(
 			perunConnector.getLdapBase(), filter.encode(), new PerunUserContextMapper());
@@ -188,19 +189,21 @@ public class PerunUserInfoRepository implements UserInfoRepository {
 	}
 
 	public PerunUserInfo getUserById(String userId) {
-		Filter filter = new EqualsFilter(subAttribute, userId);
+		Filter objClassFilter = new EqualsFilter("objectclass", "perunUser");
+		Filter subFilter = new EqualsFilter(subAttribute, userId);
+		AndFilter andFilter = new AndFilter();
+		andFilter.and(objClassFilter).and(subFilter);
 		List<PerunUserInfo> res = template.search(
-				perunConnector.getLdapBase(), filter.encode(), new PerunUserContextMapper());
+				perunConnector.getLdapBase(), andFilter.encode(), new PerunUserContextMapper());
 
 		if (res.size() == 1) {
 			return res.get(0);
 		} else {
 			throw new IllegalArgumentException("User not found: " + userId);
 		}
-
 	}
 
-	private class PerunUserContextMapper implements ContextMapper<PerunUserInfo> {
+	public class PerunUserContextMapper implements ContextMapper<PerunUserInfo> {
 		@Override
 		public PerunUserInfo mapFromContext(Object ctx) throws NamingException {
 			DirContextAdapter context = (DirContextAdapter) ctx;
