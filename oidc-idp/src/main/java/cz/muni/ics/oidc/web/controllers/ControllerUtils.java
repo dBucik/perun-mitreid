@@ -117,6 +117,19 @@ public class ControllerUtils {
 		return builder.toString();
 	}
 
+	public static String replace(String container, String key, String value) {
+		if (container.contains(key)) {
+			return container.replaceAll(key, value);
+		} else {
+			return container;
+		}
+	}
+
+	public static String getLangPropKey(Map<String, Object> model, String key) {
+		Properties langProps = (Properties) model.get(LANG_PROPS_KEY);
+		return langProps.getProperty(key);
+	}
+
 	public static void setPageOptions(Map<String, Object> model, HttpServletRequest req, Localization localization,
 									  WebHtmlClasses classes, PerunOidcConfig perunOidcConfig) {
 		setLanguageForPage(model, req, localization);
