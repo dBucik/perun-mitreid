@@ -11,7 +11,6 @@ import cz.muni.ics.oidc.server.filters.PerunRequestFilter;
 import cz.muni.ics.oidc.server.filters.PerunRequestFilterParams;
 import cz.muni.ics.oidc.web.controllers.ControllerUtils;
 import cz.muni.ics.oidc.web.controllers.IsCesnetEligibleController;
-import cz.muni.ics.oidc.web.controllers.PerunUnapprovedController;
 import org.apache.http.HttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +59,7 @@ public class PerunIsCesnetEligibleFilter extends PerunRequestFilter {
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     private final String isCesnetEligibleAttrName;
-    private final String isCesnetEligibleScope;
+    private final String triggerScope;
     private final int warningPeriod;
     private final int validityPeriod;
     /* END OF CONFIGURATION PROPERTIES */
@@ -104,7 +103,7 @@ public class PerunIsCesnetEligibleFilter extends PerunRequestFilter {
             log.debug("{} - skip execution: scope '{}' is not present in request", filterName, triggerScope);
             return true;
         } else if (warningApproved(request)) {
-            log.debug("Warning already approved, continue to the next filter");
+            log.debug("{} - Warning already approved, continue to the next filter", filterName);
             return true;
         }
 
@@ -116,7 +115,7 @@ public class PerunIsCesnetEligibleFilter extends PerunRequestFilter {
 
         String reason = IsCesnetEligibleController.REASON_NOT_SET;
         PerunAttributeValue attrValue = perunAdapter.getUserAttributeValue(user.getId(), isCesnetEligibleAttrName);
-        if (attrValue != null) {
+        if (attrValue != null && attrValue.valueAsString() != null) {
             LocalDateTime timeStamp;
             try {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_TIME_FORMAT);
