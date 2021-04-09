@@ -2,12 +2,15 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+
+## [v2.5.0]
 ### Added
 - implemented a filter for displaying warning in case of RP being registered in test environment
 #### Changed
 - dropped the column *'acr_values'* from the table *'acrs'*
 - it is now possible to define multiple claim value modifiers for single scope
 ### Important changes
+- database needs to be modified according to the new scripts
 - in claim configuration, each claim that has got a value modifier must have similar configration
 ```properties
 custom.claim.some_claim.scope=some_scope
@@ -321,6 +324,7 @@ custom.claim.some_claim.mod2.prop1=...
 First release of modified MITREid server which uses Shibboleth for authentication and reads user data from Perun system. It also has support for new scopes and claims, for extension of released access tokens, and for releasing user claims from introspection endpoint.
 
 [Unreleased]: https://github.com/CESNET/perun-mitreid/tree/master
+[v2.5.0]: https://github.com/CESNET/perun-mitreid/releases/tag/v2.5.0
 [v2.4.1]: https://github.com/CESNET/perun-mitreid/releases/tag/v2.4.1
 [v2.4.0]: https://github.com/CESNET/perun-mitreid/releases/tag/v2.4.0
 [v2.3.0]: https://github.com/CESNET/perun-mitreid/releases/tag/v2.3.0
