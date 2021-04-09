@@ -11,6 +11,7 @@ import cz.muni.ics.oidc.exceptions.ConfigurationException;
 import cz.muni.ics.oidc.models.Facility;
 import cz.muni.ics.oidc.models.PerunAttributeValue;
 import cz.muni.ics.oidc.models.PerunAttributeValueAwareModel;
+import cz.muni.ics.oidc.server.AttributeMappingsService;
 import cz.muni.ics.oidc.server.adapters.PerunAdapter;
 import cz.muni.ics.oidc.server.claims.ClaimContextCommonParameters;
 import cz.muni.ics.oidc.server.claims.ClaimModifier;
@@ -31,6 +32,7 @@ import org.mitre.openid.connect.service.UserInfoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
@@ -60,6 +62,7 @@ public class PerunUserInfoService implements UserInfoService {
 	private static final String CUSTOM_CLAIM = "custom.claim.";
 	private static final String SOURCE = ".source";
 	private static final String CLASS = ".class";
+	private static final String NAMES = ".names";
 	private static final String MODIFIER = ".modifier";
 
 	@Autowired
@@ -80,7 +83,7 @@ public class PerunUserInfoService implements UserInfoService {
 	private Properties properties;
 
 	private String subAttribute;
-	private ClaimModifier subModifier;
+	private List<ClaimModifier> subModifiers;
 	private String preferredUsernameAttribute;
 	private String givenNameAttribute;
 	private String familyNameAttribute;
@@ -91,7 +94,7 @@ public class PerunUserInfoService implements UserInfoService {
 	private String phoneAttribute;
 	private String zoneinfoAttribute;
 	private String localeAttribute;
-	private List<String> customClaimNames;
+	private Set<String> customClaimNames;
 	private List<PerunCustomClaimDefinition> customClaims = new ArrayList<>();
 	private UserInfoModifierContext userInfoModifierContext;
 
@@ -193,11 +196,7 @@ public class PerunUserInfoService implements UserInfoService {
 		this.localeAttribute = localeAttribute;
 	}
 
-	public void setCustomClaimNames(List<String> customClaimNames) {
-		if (this.customClaimNames != null) {
-			userAttrNames.removeAll(this.customClaimNames);
-		}
-		userAttrNames.addAll(customClaimNames);
+	public void setCustomClaimNames(Set<String> customClaimNames) {
 		this.customClaimNames = customClaimNames;
 	}
 
@@ -216,7 +215,7 @@ public class PerunUserInfoService implements UserInfoService {
 	@PostConstruct
 	public void postInit() throws ConfigurationException {
 		log.debug("trying to load modifier for attribute.openid.sub");
-		subModifier = loadClaimValueModifier("sub", "attribute.openid.sub.modifier");
+		subModifiers = loadClaimValueModifiers("sub", "attribute.openid.sub" + MODIFIER);
 		//custom claims
 		this.customClaims = new ArrayList<>(customClaimNames.size());
 		for (String claimName : customClaimNames) {
@@ -230,10 +229,12 @@ public class PerunUserInfoService implements UserInfoService {
 			}
 			//get ClaimSource
 			ClaimSource claimSource = loadClaimSource(claimName, propertyBase + SOURCE);
+			userAttrNames.addAll(claimSource.getAttrIdentifiers());
 			//optional claim value modifier
-			ClaimModifier claimModifier = loadClaimValueModifier(claimName, propertyBase + MODIFIER);
+			List<ClaimModifier> claimModifiers = loadClaimValueModifiers(claimName, propertyBase + MODIFIER);
 			//add claim definition
-			customClaims.add(new PerunCustomClaimDefinition(scope, claimName, claimSource, claimModifier));
+			customClaims.add(new PerunCustomClaimDefinition(scope, claimName, claimSource, claimModifiers));
+
 		}
 
 		this.userInfoModifierContext = new UserInfoModifierContext(properties, perunAdapter);
@@ -299,37 +300,61 @@ public class PerunUserInfoService implements UserInfoService {
 				.build(cacheLoader);
 	}
 
-	private ClaimModifier loadClaimValueModifier(String claimName, String propertyPrefix) throws ConfigurationException {
+	private List<ClaimModifier> loadClaimValueModifiers(String claimName, String propertyPrefix)
+			throws ConfigurationException
+	{
+		String names = properties.getProperty(propertyPrefix + NAMES, "");
+		String[] nameArr = names.split(",");
+		List<ClaimModifier> modifiers = new ArrayList<>();
+		if (nameArr.length > 0) {
+			for (String name : nameArr) {
+				modifiers.add(loadClaimValueModifier(claimName, propertyPrefix + '.' + name, name));
+			}
+		}
+		return modifiers;
+	}
+
+	private ClaimModifier loadClaimValueModifier(String claimName, String propertyPrefix, String modifierName)
+			throws ConfigurationException
+	{
 		String modifierClass = properties.getProperty(propertyPrefix + CLASS, NoOperationModifier.class.getName());
 		if (!StringUtils.hasText(modifierClass)) {
-			log.debug("{} - no class has ben configured for claim value modifier, use noop modifier", claimName);
+			log.debug("{}:{} - no class has ben configured for claim value modifier, use noop modifier",
+					claimName, modifierName);
+			modifierClass = NoOperationModifier.class.getName();
 		}
-		log.trace("{} - loading ClaimModifier class '{}'", claimName, modifierClass);
+		log.trace("{}:{} - loading ClaimModifier class '{}'", claimName, modifierName, modifierClass);
 
 		try {
 			Class<?> rawClazz = Class.forName(modifierClass);
 			if (!ClaimModifier.class.isAssignableFrom(rawClazz)) {
-				log.error("{} - failed to initialized claim modifier: class '{}' does not extend ClaimModifier",
-						claimName, modifierClass);
+				log.error("{}:{} - failed to initialized claim modifier: class '{}' does not extend ClaimModifier",
+						claimName, modifierName, modifierClass);
 				throw new ConfigurationException("No instantiable class modifier configured for claim " + claimName);
 			}
 			@SuppressWarnings("unchecked") Class<ClaimModifier> clazz = (Class<ClaimModifier>) rawClazz;
 			Constructor<ClaimModifier> constructor = clazz.getConstructor(ClaimModifierInitContext.class);
-			ClaimModifierInitContext ctx = new ClaimModifierInitContext(propertyPrefix, properties, claimName);
+			ClaimModifierInitContext ctx = new ClaimModifierInitContext(
+					propertyPrefix, properties, claimName, modifierName);
 			return constructor.newInstance(ctx);
 		} catch (ClassNotFoundException e) {
-			log.error("{} - failed to initialize claim modifier: class '{}' was not found", claimName, modifierClass);
-			log.trace("{} - details:", claimName, e);
-			throw new ConfigurationException("Error has occurred when instantiating claim modifier of " + claimName);
+			log.error("{}:{} - failed to initialize claim modifier: class '{}' was not found",
+					claimName, modifierName, modifierClass);
+			log.trace("{}:{} - details:", claimName, modifierName, e);
+			throw new ConfigurationException("Error has occurred when instantiating claim modifier '"
+					+ modifierName + "' of claim '" + claimName + '\'');
 		} catch (NoSuchMethodException e) {
-			log.error("{} - failed to initialize claim modifier: class '{}' does not have proper constructor",
-					claimName, modifierClass);
-			log.trace("{} - details:", claimName, e);
-			throw new ConfigurationException("Error has occurred when instantiating claim modifier of " + claimName);
+			log.error("{}:{} - failed to initialize claim modifier: class '{}' does not have proper constructor",
+					claimName, modifierName, modifierClass);
+			log.trace("{}:{} - details:", claimName, e);
+			throw new ConfigurationException("Error has occurred when instantiating claim modifier '"
+					+ modifierName + "' of claim '" + claimName + '\'');
 		} catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
-			log.error("{} - failed to initialize claim modifier: class '{}' cannot be instantiated", claimName, modifierClass);
-			log.trace("{} - details:", claimName, e);
-			throw new ConfigurationException("Error has occurred when instantiating claim modifier of " + claimName);
+			log.error("{}:{} - failed to initialize claim modifier: class '{}' cannot be instantiated",
+					claimName, modifierName, modifierClass);
+			log.trace("{}:{} - details:", claimName, e);
+			throw new ConfigurationException("Error has occurred when instantiating claim modifier '"
+					+ modifierName + "' of claim '" + claimName + '\'');
 		}
 	}
 
@@ -418,7 +443,7 @@ public class PerunUserInfoService implements UserInfoService {
 	}
 
 	@SuppressWarnings("FieldCanBeLocal")
-	private CacheLoader<UserClientPair, UserInfo> cacheLoader = new CacheLoader<UserClientPair, UserInfo>() {
+	private final CacheLoader<UserClientPair, UserInfo> cacheLoader = new CacheLoader<UserClientPair, UserInfo>() {
 		@Override
 		public UserInfo load(UserClientPair pair) {
 			log.debug("load({}) ... populating cache for the key", pair);
@@ -440,13 +465,17 @@ public class PerunUserInfoService implements UserInfoService {
 				}
 			}
 
-			String sub = userAttributeValues.get(subAttribute).valueAsString();
-			if (sub == null) {
+			JsonNode subJson = userAttributeValues.get(subAttribute).valueAsJson();
+			if (subJson == null || subJson.isNull() || !StringUtils.hasText(subJson.asText())) {
 				throw new RuntimeException("cannot get sub from attribute " + subAttribute + " for username " + perunUserId);
 			}
-			if (subModifier != null) {
-				//transform sub value
-				sub = subModifier.modify(sub);
+			String sub = subJson.asText();
+			if (subModifiers != null) {
+				subJson = modifyClaims(subModifiers, subJson);
+				sub = subJson.asText();
+				if (sub == null || !StringUtils.hasText(sub)) {
+					throw new RuntimeException("Sub has no value after modification for username " + perunUserId);
+				}
 			}
 
 			ui.setId(perunUserId);
@@ -500,26 +529,9 @@ public class PerunUserInfoService implements UserInfoService {
 					log.debug("claim {} is an object or array and it is empty or null", pccd.getClaim());
 					continue;
 				}
-				ClaimModifier claimModifier = pccd.getClaimModifier();
-				if (claimModifier != null) {
-					log.debug("modifying values of claim '{}' using {}", pccd.getClaim(), claimModifier);
-					//transform values
-					if (claimInJson.isTextual()) {
-						//transform a simple string value
-						claimInJson = TextNode.valueOf(claimModifier.modify(claimInJson.asText()));
-					} else if (claimInJson.isArray()) {
-						claimInJson = claimInJson.deepCopy();
-						//transform all strings in an array
-						ArrayNode arrayNode = (ArrayNode) claimInJson;
-						for (int i = 0; i < arrayNode.size(); i++) {
-							JsonNode item = arrayNode.get(i);
-							if (item.isTextual()) {
-								String original = item.asText();
-								String modified = claimModifier.modify(original);
-								arrayNode.set(i, TextNode.valueOf(modified));
-							}
-						}
-					}
+				List<ClaimModifier> claimModifiers = pccd.getClaimModifiers();
+				if (claimModifiers != null && !claimModifiers.isEmpty()) {
+					claimInJson = modifyClaims(claimModifiers, claimInJson);
 				}
 				ui.getCustomClaims().put(pccd.getClaim(), claimInJson);
 			}
@@ -534,6 +546,34 @@ public class PerunUserInfoService implements UserInfoService {
 			return new ClaimContextCommonParameters(facility);
 		}
 	};
+
+	private JsonNode modifyClaims(List<ClaimModifier> claimModifiers, JsonNode value) {
+		for (ClaimModifier modifier: claimModifiers) {
+			value = modifyClaim(modifier, value);
+		}
+		return value;
+	}
+
+	private JsonNode modifyClaim(ClaimModifier modifier, JsonNode orig) {
+		JsonNode claimInJson = orig.deepCopy();
+		if (claimInJson.isTextual()) {
+			return TextNode.valueOf(modifier.modify(claimInJson.asText()));
+		} else if (claimInJson.isArray()) {
+			ArrayNode arrayNode = (ArrayNode) claimInJson;
+			for (int i = 0; i < arrayNode.size(); i++) {
+				JsonNode item = arrayNode.get(i);
+				if (item.isTextual()) {
+					String original = item.asText();
+					String modified = modifier.modify(original);
+					arrayNode.set(i, TextNode.valueOf(modified));
+				}
+			}
+			return arrayNode;
+		} else {
+			log.warn("Original value is neither string nor array of strings - cannot modify values");
+			return orig;
+		}
+	}
 
 	private boolean shouldFillAttrs(Map<String, PerunAttributeValue> userAttributeValues) {
 		if (perunOidcConfig.isFillMissingUserAttrs()) {

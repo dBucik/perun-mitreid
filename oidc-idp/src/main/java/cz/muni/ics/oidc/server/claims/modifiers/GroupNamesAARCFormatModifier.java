@@ -12,13 +12,13 @@ import org.slf4j.LoggerFactory;
  * Construction: prefix:URL_ENCODED_VALUE#authority
  * Example: urn:geant:cesnet.cz:group:some%20value#perun.cesnet.cz
  *
- * Configuration (replace [claimName] with the name of the claim):
+ * Configuration (replace [claimName] with the name of the claim and [modifierName] with the name of modifier):
  * <ul>
- *     <li><b>custom.claim.[claimName].modifier.prefix</b> - string to be prepended to the value, defaults to
- *         <i>urn:geant:cesnet.cz:group:</i>
+ *     <li><b>custom.claim.[claimName].modifier.[modifierName].prefix</b> - string to be prepended to the value,
+ *         defaults to <i>urn:geant:cesnet.cz:group:</i>
  *     </li>
- *     <li><b>custom.claim.[claimName].modifier.append</b> - string to be appended to the value, represents authority
- *         who has released the value, defaults to <i>perun.cesnet.cz</i>
+ *     <li><b>custom.claim.[claimName].modifier.[modifierName].authority</b> - string to be appended to the value,
+ *         represents authority who has released the value, defaults to <i>perun.cesnet.cz</i>
  *     </li>
  * </ul>
  *
@@ -34,33 +34,31 @@ public class GroupNamesAARCFormatModifier extends ClaimModifier {
 
 	private final String prefix;
 	private final String authority;
-	private final String claimName;
 
 	public GroupNamesAARCFormatModifier(ClaimModifierInitContext ctx) {
 		super(ctx);
-		this.claimName = ctx.getClaimName();
 		this.prefix = ClaimUtils.fillStringPropertyOrNoVal(PREFIX, ctx);
 		if (!ClaimUtils.isPropSet(this.prefix)) {
-			throw new IllegalArgumentException(claimName + " - missing mandatory configuration option: " + PREFIX);
+			throw new IllegalArgumentException(getUnifiedName() + " - missing mandatory configuration option: " + PREFIX);
 		}
 		this.authority = ClaimUtils.fillStringPropertyOrNoVal(AUTHORITY, ctx);
 		if (!ClaimUtils.isPropSet(this.authority)) {
-			throw new IllegalArgumentException(claimName + " - missing mandatory configuration option: " + AUTHORITY);
+			throw new IllegalArgumentException(getUnifiedName() + " - missing mandatory configuration option: " + AUTHORITY);
 		}
-		log.debug("{}(modifier) - prefix: '{}', authority: '{}'", claimName, prefix, authority);
+		log.debug("{}:{}(modifier) - prefix: '{}', authority: '{}'", getClaimName(), getModifierName(), prefix, authority);
 	}
 
 	@Override
 	public String modify(String value) {
 		String modified = prefix + UrlEscapers.urlPathSegmentEscaper().escape(value) + "#" + authority;
-		log.trace("{} - modifying value '{}' to AARC format", claimName, value);
-		log.trace("{} - new value: '{}", claimName, modified);
+		log.trace("{} - modifying value '{}' to AARC format", getUnifiedName(), value);
+		log.trace("{} - new value: '{}", getUnifiedName(), modified);
 		return modified;
 	}
 
 	@Override
 	public String toString() {
-		return "GroupNamesAARCFormatModifier to " + prefix + "<GROUP>#" + authority;
+		return getUnifiedName() +  " - GroupNamesAARCFormatModifier to " + prefix + "<GROUP>#" + authority;
 	}
 
 }

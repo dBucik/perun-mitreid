@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 - implemented a filter for displaying warning in case of RP being registered in test environment
 #### Changed
 - dropped the column *'acr_values'* from the table *'acrs'*
+- it is now possible to define multiple claim value modifiers for single scope
+### Important changes
+- in claim configuration, each claim that has got a value modifier must have similar configration
+```properties
+custom.claim.some_claim.scope=some_scope
+custom.claim.some_claim.class=...
+custom.claim.some_claim.modifiers.names=mod1,mod2
+custom.claim.some_claim.mod1.class=...
+custom.claim.some_claim.mod1.prop1=...
+custom.claim.some_claim.mod2.class=...
+custom.claim.some_claim.mod2.prop1=...
+```
 
 ## [v2.4.1]
 ### Fixed

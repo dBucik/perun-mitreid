@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Set;
+
 /**
  * Interface for code that can produce claim values.
  *
@@ -15,9 +17,18 @@ public abstract class ClaimSource {
 
 	private static final Logger log = LoggerFactory.getLogger(ClaimSource.class);
 
+	private final String claimName;
+
 	public ClaimSource(ClaimSourceInitContext ctx) {
-		log.debug("{} - claim source initialized", ctx.getClaimName());
+		this.claimName = ctx.getClaimName();
+		log.debug("{} - claim source initialized", getClaimName());
 	}
+
+	public String getClaimName() {
+		return claimName;
+	}
+
+	public abstract Set<String> getAttrIdentifiers();
 
 	public abstract JsonNode produceValue(ClaimSourceProduceContext pctx);
 

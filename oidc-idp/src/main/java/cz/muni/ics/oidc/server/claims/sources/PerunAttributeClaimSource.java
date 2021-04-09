@@ -9,6 +9,9 @@ import cz.muni.ics.oidc.server.claims.ClaimUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * Source for claim which get value of attribute from Perun.
  *
@@ -28,16 +31,19 @@ public class PerunAttributeClaimSource extends ClaimSource {
 	private static final String ATTRIBUTE = "attribute";
 
 	private final String attributeName;
-	private final String claimName;
 
 	public PerunAttributeClaimSource(ClaimSourceInitContext ctx) {
 		super(ctx);
-		this.claimName = ctx.getClaimName();
 		this.attributeName = ClaimUtils.fillStringPropertyOrNoVal(ATTRIBUTE, ctx);
 		if (!ClaimUtils.isPropSet(this.attributeName)) {
 			throw new IllegalArgumentException("Missing mandatory configuration option - " + ATTRIBUTE);
 		}
-		log.debug("{} - attributeName: '{}'", claimName, attributeName);
+		log.debug("{} - attributeName: '{}'", getClaimName(), attributeName);
+	}
+
+	@Override
+	public Set<String> getAttrIdentifiers() {
+		return Collections.singleton(attributeName);
 	}
 
 	@Override
@@ -47,7 +53,7 @@ public class PerunAttributeClaimSource extends ClaimSource {
 			value = pctx.getAttrValues().get(attributeName).valueAsJson();
 		}
 
-		log.debug("{} - produced value for user({}): '{}'", claimName, pctx.getPerunUserId(), value);
+		log.debug("{} - produced value for user({}): '{}'", getClaimName(), pctx.getPerunUserId(), value);
 		return value;
 	}
 

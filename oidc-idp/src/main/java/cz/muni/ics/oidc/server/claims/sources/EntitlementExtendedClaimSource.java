@@ -25,12 +25,14 @@ public class EntitlementExtendedClaimSource extends EntitlementSource {
 
     private static final PercentEscaper ESCAPER = new PercentEscaper("-_.!~*'()", false);
 
-    private final String claimName;
-
     public EntitlementExtendedClaimSource(ClaimSourceInitContext ctx) {
         super(ctx);
-        this.claimName = ctx.getClaimName();
-        log.debug("{} - initialized", claimName);
+        log.debug("{} - initialized", getClaimName());
+    }
+
+    @Override
+    public Set<String> getAttrIdentifiers() {
+        return super.getAttrIdentifiers();
     }
 
     @Override
@@ -39,7 +41,7 @@ public class EntitlementExtendedClaimSource extends EntitlementSource {
         Set<String> entitlements = produceEntitlementsExtended(pctx.getContextCommonParameters().getClient(),
                 userId, pctx.getPerunAdapter());
         JsonNode result = convertResultStringsToJsonArray(entitlements);
-        log.debug("{} - produced value for user({}): '{}'", claimName, userId, result);
+        log.debug("{} - produced value for user({}): '{}'", getClaimName(), userId, result);
         return result;
     }
 
@@ -50,7 +52,7 @@ public class EntitlementExtendedClaimSource extends EntitlementSource {
         this.fillUuidEntitlements(userGroups, entitlements);
         fillForwardedEntitlements(perunAdapter, userId, entitlements);
         fillCapabilities(facility, perunAdapter, groupIdToNameMap,entitlements);
-        log.trace("{} - UUID entitlements added", claimName);
+        log.trace("{} - UUID entitlements added", getClaimName());
         return entitlements;
     }
 
@@ -61,10 +63,10 @@ public class EntitlementExtendedClaimSource extends EntitlementSource {
                 displayName = displayName.replace(':' + MEMBERS, "");
             }
             String entitlement = wrapGroupEntitlementToAARC(group.getUuid());
-            log.trace("{} - added UUID entitlement: '{}'", claimName, entitlement);
+            log.trace("{} - added UUID entitlement: '{}'", getClaimName(), entitlement);
             entitlements.add(entitlement);
             String entitlementWithAttributes = wrapGroupEntitlementToAARCWithAttributes(group.getUuid(), displayName);
-            log.trace("{} - added UUID entitlement with displayName: '{}'", claimName, entitlementWithAttributes);
+            log.trace("{} - added UUID entitlement with displayName: '{}'", getClaimName(), entitlementWithAttributes);
             entitlements.add(entitlementWithAttributes);
         }
     }

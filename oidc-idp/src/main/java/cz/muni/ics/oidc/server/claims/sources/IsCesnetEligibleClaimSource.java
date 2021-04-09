@@ -14,6 +14,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * This source checks if the timestamp is within 12 months from now. If so, returns TRUE, FALSE otherwise.
@@ -38,21 +40,24 @@ public class IsCesnetEligibleClaimSource extends ClaimSource {
 
     private final String sourceAttr;
     private String valueFormat;
-    private final String claimName;
 
     public IsCesnetEligibleClaimSource(ClaimSourceInitContext ctx) {
         super(ctx);
-        this.claimName = ctx.getClaimName();
         this.sourceAttr = ClaimUtils.fillStringPropertyOrNoVal(SOURCE_ATTR_NAME, ctx);
         if (!ClaimUtils.isPropSet(sourceAttr)) {
-            throw new IllegalArgumentException(claimName + " - missing mandatory configuration option: "
-                    + SOURCE_ATTR_NAME);
+            throw new IllegalArgumentException(getClaimName() + " - missing mandatory configuration option: " +
+                    SOURCE_ATTR_NAME);
         }
         this.valueFormat = ClaimUtils.fillStringPropertyOrNoVal(VALUE_FORMAT, ctx);
         if (!ClaimUtils.isPropSet(valueFormat)) {
             this.valueFormat = DEFAULT_FORMAT;
         }
-        log.debug("{} - sourceAttr: '{}', valueFormat: '{}'", claimName, sourceAttr, valueFormat);
+        log.debug("{} - sourceAttr: '{}', valueFormat: '{}'", getClaimName(), sourceAttr, valueFormat);
+    }
+
+    @Override
+    public Set<String> getAttrIdentifiers() {
+        return Collections.singleton(sourceAttr);
     }
 
     @Override
@@ -64,7 +69,7 @@ public class IsCesnetEligibleClaimSource extends ClaimSource {
         } else {
             result = JsonNodeFactory.instance.booleanNode(false);
         }
-        log.debug("{} - produced value for user({}): '{}'", claimName, pctx.getPerunUserId(), result);
+        log.debug("{} - produced value for user({}): '{}'", getClaimName(), pctx.getPerunUserId(), result);
         return result;
     }
 
@@ -77,18 +82,18 @@ public class IsCesnetEligibleClaimSource extends ClaimSource {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(valueFormat);
             timeStampLastSeen = LocalDate.parse(attrValue, formatter);
         } catch (DateTimeParseException e) {
-            log.warn("{} - could not parse timestamp (for format: {}) value: '{}'", claimName, valueFormat, attrValue);
+            log.warn("{} - could not parse timestamp (for format: {}) value: '{}'", getClaimName(), valueFormat, attrValue);
             return false;
         }
 
         LocalDate now = LocalDateTime.now().toLocalDate();
         if (timeStampLastSeen.isBefore(now.minusMonths(VALIDITY_PERIOD))) {
             log.trace("{} - timestamp '{}' is after the defined period of '{} months'",
-                    claimName, timeStampLastSeen, VALIDITY_PERIOD);
+                    getClaimName(), timeStampLastSeen, VALIDITY_PERIOD);
             return false;
         } else {
             log.trace("{} - timestamp '{}' is within the defined period of '{} months'",
-                    claimName, timeStampLastSeen, VALIDITY_PERIOD);
+                    getClaimName(), timeStampLastSeen, VALIDITY_PERIOD);
             return true;
         }
     }

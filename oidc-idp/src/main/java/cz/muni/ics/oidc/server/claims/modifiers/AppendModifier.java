@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Appending modifier. Appends the given text to the claim value.
  *
- * Configuration (replace [claimName] with the name of the claim):
+ * Configuration (replace [claimName] with the name of the claim and [modifierName] with the name of modifier):
  * <ul>
- *     <li><b>custom.claim.[claimName].modifier.append</b> - string to be appended to the value</li>
+ *     <li><b>custom.claim.[claimName].modifier.[modifierName].append</b> - string to be appended to the value</li>
  * </ul>
  *
  * @author Martin Kuba <makub@ics.muni.cz>
@@ -23,26 +23,24 @@ public class AppendModifier extends ClaimModifier {
 	private static final String APPEND = "append";
 
 	private final String appendText;
-	private final String claimName;
 
 	public AppendModifier(ClaimModifierInitContext ctx) {
 		super(ctx);
-		this.claimName = ctx.getClaimName();
 		appendText = ctx.getProperty(APPEND, "");
-		log.debug("{}(modifier) - appendText: '{}'", claimName, appendText);
+		log.debug("{}(modifier) - appendText: '{}'", getUnifiedName(), appendText);
 	}
 
 	@Override
 	public String modify(String value) {
 		String modified = value + appendText;
-		log.trace("{} - modifying value '{}' by appending text '{}'", claimName, value, appendText);
-		log.trace("{} - new value: '{}", claimName, modified);
+		log.trace("{} - modifying value '{}' by appending text '{}'", getUnifiedName(), value, appendText);
+		log.trace("{} - new value: '{}", getUnifiedName(), modified);
 		return modified;
 	}
 
 	@Override
 	public String toString() {
-		return "AppendModifier appending " + appendText;
+		return getUnifiedName() + " - AppendModifier appending " + appendText;
 	}
 
 }

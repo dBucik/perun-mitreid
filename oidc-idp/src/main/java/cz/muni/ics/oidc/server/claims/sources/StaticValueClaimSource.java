@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * Source for claim which releases the defined value.
@@ -39,19 +41,22 @@ public class StaticValueClaimSource extends ClaimSource {
 	private final String valueSeparator;
 	private String[] valueArr;
 	private final String valueStr;
-	private final String claimName;
 
 	public StaticValueClaimSource(ClaimSourceInitContext ctx) {
 		super(ctx);
-		this.claimName = ctx.getClaimName();
 		this.valueSeparator = ctx.getProperty(VALUE_SEPARATOR, NO_SEPARATOR);
 		this.valueStr = ctx.getProperty(VALUE, null);
 		this.valueArr = null;
 		if (valueStr != null) {
 			valueArr = valueStr.split(valueSeparator);
 		}
-		log.debug("{} - valueSeparator: '{}', valueStr: '{}', valueArr: '{}'", claimName,
+		log.debug("{} - valueSeparator: '{}', valueStr: '{}', valueArr: '{}'", getClaimName(),
 				valueSeparator, valueStr, valueArr);
+	}
+
+	@Override
+	public Set<String> getAttrIdentifiers() {
+		return Collections.emptySet();
 	}
 
 	@Override
@@ -71,7 +76,7 @@ public class StaticValueClaimSource extends ClaimSource {
 			value = JsonNodeFactory.instance.textNode(valueStr);
 		}
 
-		log.debug("{} - produced value for user({}): '{}'", claimName, pctx.getPerunUserId(), value);
+		log.debug("{} - produced value for user({}): '{}'", getClaimName(), pctx.getPerunUserId(), value);
 		return value;
 	}
 

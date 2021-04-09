@@ -24,7 +24,7 @@ public class NoOperationModifier extends ClaimModifier {
 
 	@Override
 	public String toString() {
-		return "No operation modifier";
+		return getUnifiedName() + " - No operation modifier";
 	}
 
 }

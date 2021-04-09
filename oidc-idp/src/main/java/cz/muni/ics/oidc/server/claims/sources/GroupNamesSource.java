@@ -9,12 +9,12 @@ import cz.muni.ics.oidc.server.adapters.PerunAdapter;
 import cz.muni.ics.oidc.server.claims.ClaimSource;
 import cz.muni.ics.oidc.server.claims.ClaimSourceInitContext;
 import cz.muni.ics.oidc.server.claims.ClaimSourceProduceContext;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -31,24 +31,27 @@ public class GroupNamesSource extends ClaimSource {
 	public static final Logger log = LoggerFactory.getLogger(GroupNamesSource.class);
 
 	protected static final String MEMBERS = "members";
-	private final String claimName;
 
 	public GroupNamesSource(ClaimSourceInitContext ctx) {
 		super(ctx);
-		this.claimName = ctx.getClaimName();
-		log.debug("{} - initialized", claimName);
+		log.debug("{} - initialized", getClaimName());
+	}
+
+	@Override
+	public Set<String> getAttrIdentifiers() {
+		return Collections.emptySet();
 	}
 
 	@Override
 	public JsonNode produceValue(ClaimSourceProduceContext pctx) {
 		Map<Long, String> idToNameMap = this.produceGroupNames(pctx);
 		JsonNode result = convertResultStringsToJsonArray(new HashSet<>(idToNameMap.values()));
-		log.debug("{} - produced value for user({}): '{}'", claimName, pctx.getPerunUserId(), result);
+		log.debug("{} - produced value for user({}): '{}'", getClaimName(), pctx.getPerunUserId(), result);
 		return result;
 	}
 
 	protected Map<Long, String> produceGroupNames(ClaimSourceProduceContext pctx) {
-		log.trace("{} - produce group names with trimming 'members' part of the group names", claimName);
+		log.trace("{} - produce group names with trimming 'members' part of the group names", getClaimName());
 		Facility facility = pctx.getContextCommonParameters().getClient();
 		Set<Group> userGroups = getUserGroupsOnFacility(facility, pctx.getPerunUserId(), pctx.getPerunAdapter());
 		return getGroupIdToNameMap(userGroups, true);
@@ -66,18 +69,18 @@ public class GroupNamesSource extends ClaimSource {
 			idToNameMap.put(g.getId(), g.getUniqueGroupName());
 		});
 
-		log.trace("{} - group ID to group name map: '{}'", claimName, idToNameMap);
+		log.trace("{} - group ID to group name map: '{}'", getClaimName(), idToNameMap);
 		return idToNameMap;
 	}
 
 	protected Set<Group> getUserGroupsOnFacility(Facility facility, Long userId, PerunAdapter perunAdapter) {
 		Set<Group> userGroups = new HashSet<>();
 		if (facility == null) {
-			log.warn("{} - no facility provided when searching for user groups, will return empty set", claimName);
+			log.warn("{} - no facility provided when searching for user groups, will return empty set", getClaimName());
 		} else {
 			userGroups = perunAdapter.getGroupsWhereUserIsActiveWithUniqueNames(facility.getId(), userId);
 		}
-		log.trace("{} - found user groups: '{}'", claimName, userGroups);
+		log.trace("{} - found user groups: '{}'", getClaimName(), userGroups);
 		return userGroups;
 	}
 

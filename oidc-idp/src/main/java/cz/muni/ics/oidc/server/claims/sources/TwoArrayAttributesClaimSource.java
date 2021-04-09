@@ -10,6 +10,10 @@ import cz.muni.ics.oidc.server.claims.ClaimUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Claim source which takes value from two attributes from Perun.
  *
@@ -32,20 +36,25 @@ public class TwoArrayAttributesClaimSource extends ClaimSource {
 
 	private final String attribute1Name;
 	private final String attribute2Name;
-	private final String claimName;
 
 	public TwoArrayAttributesClaimSource(ClaimSourceInitContext ctx) {
 		super(ctx);
-		this.claimName = ctx.getClaimName();
 		this.attribute1Name = ClaimUtils.fillStringPropertyOrNoVal(ATTRIBUTE_1, ctx);
 		if (!ClaimUtils.isPropSet(this.attribute1Name)) {
-			throw new IllegalArgumentException(claimName + " - missing mandatory configuration option: " + ATTRIBUTE_1);
+			throw new IllegalArgumentException(getClaimName() + " - missing mandatory configuration option: " +
+					ATTRIBUTE_1);
 		}
 		this.attribute2Name = ClaimUtils.fillStringPropertyOrNoVal(ATTRIBUTE_2, ctx);
 		if (!ClaimUtils.isPropSet(this.attribute2Name)) {
-			throw new IllegalArgumentException(claimName + " - missing mandatory configuration option: " + ATTRIBUTE_2);
+			throw new IllegalArgumentException(getClaimName() + " - missing mandatory configuration option: " +
+					ATTRIBUTE_2);
 		}
-		log.debug("{} - attribute1Name: '{}', attribute2Name: '{}'", claimName, attribute1Name, attribute2Name);
+		log.debug("{} - attribute1Name: '{}', attribute2Name: '{}'", getClaimName(), attribute1Name, attribute2Name);
+	}
+
+	@Override
+	public Set<String> getAttrIdentifiers() {
+		return new HashSet<>(Arrays.asList(attribute1Name, attribute1Name));
 	}
 
 	@Override
@@ -54,13 +63,13 @@ public class TwoArrayAttributesClaimSource extends ClaimSource {
 		if (ClaimUtils.isPropSetAndHasAttribute(attribute1Name, pctx)) {
 			j1 = pctx.getAttrValues().get(attribute1Name).valueAsJson();
 		}
-		log.trace("{} - found values for '{}': {}", claimName, attribute1Name, j1);
+		log.trace("{} - found values for '{}': {}", getClaimName(), attribute1Name, j1);
 
 		JsonNode j2 = new ArrayNode(JsonNodeFactory.instance);
 		if (ClaimUtils.isPropSetAndHasAttribute(attribute2Name, pctx)) {
 			j2 = pctx.getAttrValues().get(attribute2Name).valueAsJson();
 		}
-		log.trace("{} - found values for '{}': {}", claimName, attribute2Name, j2);
+		log.trace("{} - found values for '{}': {}", getClaimName(), attribute2Name, j2);
 
 		JsonNode result;
 		if (j1 == null || j1.isNull() || !j1.isArray()) {
@@ -75,7 +84,7 @@ public class TwoArrayAttributesClaimSource extends ClaimSource {
 			arr.addAll(a2);
 			result = arr;
 		}
-		log.debug("{} - produced value for user({}): '{}'", claimName, pctx.getPerunUserId(), result);
+		log.debug("{} - produced value for user({}): '{}'", getClaimName(), pctx.getPerunUserId(), result);
 		return result;
 	}
 

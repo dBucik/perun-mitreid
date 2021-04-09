@@ -14,15 +14,34 @@ public abstract class ClaimModifier {
 
 	private static final Logger log = LoggerFactory.getLogger(ClaimModifier.class);
 
+	private final String claimName;
+	private final String modifierName;
+
 	public ClaimModifier(ClaimModifierInitContext ctx) {
+		this.claimName = ctx.getClaimName();
+		this.modifierName = ctx.getModifierName();
 		log.debug("{} - claim modifier initialized", ctx.getClaimName());
+	}
+
+	public String getClaimName() {
+		return claimName;
+	}
+
+	public String getModifierName() {
+		return modifierName;
+	}
+
+	public String getUnifiedName() {
+		return claimName + ':' + modifierName;
 	}
 
 	public abstract String modify(String value);
 
 	@Override
 	public String toString() {
-		return this.getClass().getName();
+		return this.getClass().getSimpleName() + '{' +
+				"claimName='" + claimName + '\'' +
+				", modifierName='" + modifierName + '\'' +
+				'}';
 	}
-
 }

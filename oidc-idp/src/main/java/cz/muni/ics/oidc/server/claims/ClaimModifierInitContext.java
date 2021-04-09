@@ -17,20 +17,27 @@ public class ClaimModifierInitContext {
 	private final String propertyPrefix;
 	private final Properties properties;
 	private final String claimName;
+	private final String modifierName;
 
-	public ClaimModifierInitContext(String propertyPrefix, Properties properties, String claimName) {
+	public ClaimModifierInitContext(String propertyPrefix, Properties properties, String claimName, String modifierName) {
 		this.propertyPrefix = propertyPrefix;
 		this.properties = properties;
 		this.claimName = claimName;
-		log.debug("{} - context: property prefix for modifier configured to '{}'", claimName, propertyPrefix);
+		this.modifierName = modifierName;
+		log.debug("{}:{} - context: property prefix for modifier configured to '{}'",
+				claimName, modifierName, propertyPrefix);
 	}
 
 	public String getClaimName() {
 		return claimName;
 	}
 
+	public String getModifierName() {
+		return modifierName;
+	}
+
 	public String getProperty(String suffix, String defaultValue) {
-		return properties.getProperty(propertyPrefix + "." + suffix, defaultValue);
+		return properties.getProperty(propertyPrefix + '.' + suffix, defaultValue);
 	}
 
 }

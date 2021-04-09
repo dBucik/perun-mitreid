@@ -89,9 +89,9 @@ public class GA4GHClaimSource extends ClaimSource {
 	private static final Map<URI, RemoteJWKSet<SecurityContext>> remoteJwkSets = new HashMap<>();
 	private static final Map<URI, String> signers = new HashMap<>();
 
-	private String bonaFideStatusAttr;
-	private String bonaFideStatusREMSAttr;
-	private String groupAffiliationsAttr;
+	private final String bonaFideStatusAttr;
+	private final String bonaFideStatusREMSAttr;
+	private final String groupAffiliationsAttr;
 
 	public GA4GHClaimSource(ClaimSourceInitContext ctx) throws URISyntaxException {
 		super(ctx);
@@ -151,6 +151,21 @@ public class GA4GHClaimSource extends ClaimSource {
 		} catch (IOException ex) {
 			log.error("cannot read GA4GH config file", ex);
 		}
+	}
+
+	@Override
+	public Set<String> getAttrIdentifiers() {
+		Set<String> set = new HashSet<>();
+		if (bonaFideStatusAttr != null) {
+			set.add(bonaFideStatusAttr);
+		}
+		if (bonaFideStatusREMSAttr != null) {
+			set.add(bonaFideStatusREMSAttr);
+		}
+		if (groupAffiliationsAttr != null) {
+			set.add(groupAffiliationsAttr);
+		}
+		return set;
 	}
 
 	@Override

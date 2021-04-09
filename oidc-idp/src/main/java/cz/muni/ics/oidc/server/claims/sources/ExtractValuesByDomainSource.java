@@ -12,6 +12,9 @@ import cz.muni.ics.oidc.server.claims.ClaimUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * This source extract attribute values for given scope
  *
@@ -32,27 +35,31 @@ public class ExtractValuesByDomainSource extends ClaimSource {
 
 	private final String domain;
 	private final String attributeName;
-	private final String claimName;
 
 	public ExtractValuesByDomainSource(ClaimSourceInitContext ctx) {
 		super(ctx);
-		this.claimName = ctx.getClaimName();
 		this.domain = ClaimUtils.fillStringPropertyOrNoVal(EXTRACT_BY_DOMAIN, ctx);
 		if (!ClaimUtils.isPropSet(this.domain)) {
-			throw new IllegalArgumentException(claimName + " - missing mandatory configuration option: "
+			throw new IllegalArgumentException(getClaimName() + " - missing mandatory configuration option: "
 					+ EXTRACT_BY_DOMAIN);
 		}
 		this.attributeName = ClaimUtils.fillStringPropertyOrNoVal(ATTRIBUTE_NAME, ctx);
 		if (!ClaimUtils.isPropSet(this.attributeName)) {
-			throw new IllegalArgumentException(claimName + " - missing mandatory configuration option: "
+			throw new IllegalArgumentException(getClaimName() + " - missing mandatory configuration option: "
 					+ ATTRIBUTE_NAME);
 		}
-		log.debug("{} - domain: '{}', attributeName: '{}'", claimName, domain, attributeName);
+		log.debug("{} - domain: '{}', attributeName: '{}'", getClaimName(), domain, attributeName);
+	}
+
+	@Override
+	public Set<String> getAttrIdentifiers() {
+		return Collections.singleton(attributeName);
 	}
 
 	@Override
 	public JsonNode produceValue(ClaimSourceProduceContext pctx) {
 		JsonNode result = NullNode.getInstance();
+		log.error("{}", pctx.getAttrValues());
 		if (!ClaimUtils.isPropSet(domain)) {
 			log.trace("{} - no domain set, return empty JSON", domain);
 			result = NullNode.getInstance();
@@ -64,7 +71,7 @@ public class ExtractValuesByDomainSource extends ClaimSource {
 			if (attributeValue != null) {
 				JsonNode attributeValueJson = attributeValue.valueAsJson();
 				if (attributeValueJson.isTextual() && hasDomain(attributeValueJson.textValue(), domain)) {
-					log.trace("{} - found domain in string value: '{}'", claimName, attributeValueJson);
+					log.trace("{} - found domain in string value: '{}'", getClaimName(), attributeValueJson);
 					result = attributeValueJson;
 				} else if (attributeValueJson.isArray()) {
 					ArrayNode arrayNode = (ArrayNode) attributeValueJson;
@@ -74,7 +81,7 @@ public class ExtractValuesByDomainSource extends ClaimSource {
 					for (int i = 0; i < arrayNode.size(); i++) {
 						String subValue = arrayNode.get(i).textValue();
 						if (hasDomain(subValue, domain)) {
-							log.trace("{} - found domain in array sub-value: '{}'", claimName, subValue);
+							log.trace("{} - found domain in array sub-value: '{}'", getClaimName(), subValue);
 							arr.add(subValue);
 						}
 					}
@@ -82,7 +89,7 @@ public class ExtractValuesByDomainSource extends ClaimSource {
 				}
 			}
 		}
-		log.debug("{} - produced value for user({}): '{}'", claimName, pctx.getPerunUserId(), result);
+		log.debug("{} - produced value for user({}): '{}'", getClaimName(), pctx.getPerunUserId(), result);
 		return result;
 	}
 

@@ -13,8 +13,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -57,25 +59,34 @@ public class EntitlementSource extends GroupNamesSource {
 	private final String facilityCapabilities;
 	private final String prefix;
 	private final String authority;
-	private final String claimName;
 
 	public EntitlementSource(ClaimSourceInitContext ctx) {
 		super(ctx);
-		this.claimName = ctx.getClaimName();
 		this.forwardedEntitlements = ClaimUtils.fillStringPropertyOrNoVal(FORWARDED_ENTITLEMENTS, ctx);
 		this.resourceCapabilities = ClaimUtils.fillStringPropertyOrNoVal(RESOURCE_CAPABILITIES, ctx);
 		this.facilityCapabilities = ClaimUtils.fillStringPropertyOrNoVal(FACILITY_CAPABILITIES, ctx);
 		this.prefix = ClaimUtils.fillStringPropertyOrNoVal(PREFIX, ctx);
 		if (!ClaimUtils.isPropSet(this.prefix)) {
-			throw new IllegalArgumentException(claimName + " - missing mandatory configuration option: " + PREFIX);
+			throw new IllegalArgumentException(getClaimName() + " - missing mandatory configuration option: " +
+					PREFIX);
 		}
 		this.authority = ClaimUtils.fillStringPropertyOrNoVal(AUTHORITY, ctx);
 		if (!ClaimUtils.isPropSet(this.authority)) {
-			throw new IllegalArgumentException(claimName + " - missing mandatory configuration option: " + AUTHORITY);
+			throw new IllegalArgumentException(getClaimName() + " - missing mandatory configuration option: " +
+					AUTHORITY);
 		}
 		log.debug("{} - forwardedEntitlements: '{}', resourceCapabilities: '{}', facilityCapabilities: '{}', " +
-				"prefix: '{}', authority: '{}'", claimName, forwardedEntitlements, resourceCapabilities,
+				"prefix: '{}', authority: '{}'", getClaimName(), forwardedEntitlements, resourceCapabilities,
 				facilityCapabilities, prefix, authority);
+	}
+
+	@Override
+	public Set<String> getAttrIdentifiers() {
+		Set<String> set = new HashSet<>(super.getAttrIdentifiers());
+		if (forwardedEntitlements != null) {
+			set.add(forwardedEntitlements);
+		}
+		return set;
 	}
 
 	@Override
@@ -87,7 +98,7 @@ public class EntitlementSource extends GroupNamesSource {
 		Set<String> entitlements = produceEntitlements(facility, userGroups, userId, perunAdapter);
 
 		JsonNode result = convertResultStringsToJsonArray(entitlements);
-		log.debug("{} - produced value for user({}): '{}'", claimName, userId, result);
+		log.debug("{} - produced value for user({}): '{}'", getClaimName(), userId, result);
 		return result;
 	}
 
@@ -100,7 +111,7 @@ public class EntitlementSource extends GroupNamesSource {
 
 		for (String capability : resultCapabilities) {
 			entitlements.add(wrapCapabilityToAARC(capability));
-			log.trace("{} - added capability: {}", claimName, capability);
+			log.trace("{} - added capability: {}", getClaimName(), capability);
 		}
 	}
 
@@ -111,7 +122,7 @@ public class EntitlementSource extends GroupNamesSource {
 			JsonNode eduPersonEntitlementJson = forwardedEntitlementsVal.valueAsJson();
 			for (int i = 0; i < eduPersonEntitlementJson.size(); i++) {
 				String entitlement = eduPersonEntitlementJson.get(i).asText();
-				log.trace("{} - added forwarded entitlement: {}", claimName, entitlement);
+				log.trace("{} - added forwarded entitlement: {}", getClaimName(), entitlement);
 				entitlements.add(entitlement);
 			}
 		}
@@ -133,7 +144,7 @@ public class EntitlementSource extends GroupNamesSource {
 				gname += (':' + parts[1]);
 			}
 			String gNameEntitlement = wrapGroupNameToAARC(gname);
-			log.trace("{} - added group name entitlement: {}", claimName, gNameEntitlement);
+			log.trace("{} - added group name entitlement: {}", getClaimName(), gNameEntitlement);
 			entitlements.add(gNameEntitlement);
 		}
 	}
@@ -146,17 +157,17 @@ public class EntitlementSource extends GroupNamesSource {
 
 		if (groupIdToNameMap != null && !groupIdToNameMap.values().isEmpty()) {
 			this.fillEntitlementsFromGroupNames(new HashSet<>(groupIdToNameMap.values()), entitlements);
-			log.trace("{} - entitlements for group names added", claimName);
+			log.trace("{} - entitlements for group names added", getClaimName());
 		}
 
 		if (facility != null) {
 			this.fillCapabilities(facility, perunAdapter, groupIdToNameMap, entitlements);
-			log.trace("{} - capabilities added", claimName);
+			log.trace("{} - capabilities added", getClaimName());
 		}
 
 		if (ClaimUtils.isPropSet(this.forwardedEntitlements)) {
 			this.fillForwardedEntitlements(perunAdapter, userId, entitlements);
-			log.trace("{} - forwarded entitlements added", claimName);
+			log.trace("{} - forwarded entitlements added", getClaimName());
 		}
 
 		return entitlements;

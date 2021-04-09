@@ -3,6 +3,10 @@ package cz.muni.ics.oidc.server.claims;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * Keeps definition of a custom user claim.
  *
@@ -28,19 +32,24 @@ public class PerunCustomClaimDefinition {
 
 	private static final Logger log = LoggerFactory.getLogger(PerunCustomClaimDefinition.class);
 
-	private String scope;
-	private String claim;
-	private ClaimSource claimSource;
-	private ClaimModifier claimModifier;
+	private final String scope;
+	private final String claim;
+	private final ClaimSource claimSource;
+	private final List<ClaimModifier> claimModifiers = new ArrayList<>();
 
-	public PerunCustomClaimDefinition(String scope, String claim, ClaimSource claimSource, ClaimModifier claimModifier) {
+	public PerunCustomClaimDefinition(String scope,
+									  String claim,
+									  ClaimSource claimSource,
+									  List<ClaimModifier> claimModifiers) {
 		this.scope = scope;
 		this.claim = claim;
 		this.claimSource = claimSource;
-		this.claimModifier = claimModifier;
-		log.debug("initialized scope '{}' with claim '{}', claimSource '{}' and modifier '{}", scope, claim,
+		this.claimModifiers.addAll(claimModifiers);
+		log.debug("initialized scope '{}' with claim '{}', claimSource '{}' and modifiers '{}", scope, claim,
 				(claimSource != null ? claimSource.getClass().getSimpleName() : "none"),
-				(claimModifier != null ? claimModifier.getClass().getSimpleName() : "none")
+				(!claimModifiers.isEmpty() ? claimModifiers.stream()
+						.map(cm -> cm.getClass().getSimpleName())
+						.collect(Collectors.joining(",")) : "none")
 		);
 	}
 
@@ -56,8 +65,8 @@ public class PerunCustomClaimDefinition {
 		return claimSource;
 	}
 
-	public ClaimModifier getClaimModifier() {
-		return claimModifier;
+	public List<ClaimModifier> getClaimModifiers() {
+		return claimModifiers;
 	}
 
 }
