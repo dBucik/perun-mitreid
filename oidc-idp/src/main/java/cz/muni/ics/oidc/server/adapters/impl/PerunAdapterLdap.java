@@ -67,6 +67,7 @@ import static cz.muni.ics.oidc.server.adapters.impl.PerunAdapterLdapConstants.PE
 import static cz.muni.ics.oidc.server.adapters.impl.PerunAdapterLdapConstants.PERUN_VO_ID;
 import static cz.muni.ics.oidc.server.adapters.impl.PerunAdapterLdapConstants.SN;
 import static cz.muni.ics.oidc.server.adapters.impl.PerunAdapterLdapConstants.UNIQUE_MEMBER;
+import static cz.muni.ics.oidc.server.adapters.impl.PerunAdapterLdapConstants.UUID;
 import static org.apache.directory.ldap.client.api.search.FilterBuilder.and;
 import static org.apache.directory.ldap.client.api.search.FilterBuilder.equal;
 import static org.apache.directory.ldap.client.api.search.FilterBuilder.or;
@@ -508,11 +509,11 @@ public class PerunAdapterLdap extends PerunAdapterWithMappingServices implements
 			}
 
 			String[] attributes = new String[]{PERUN_GROUP_ID, CN, DESCRIPTION, PERUN_UNIQUE_GROUP_NAME,
-					PERUN_VO_ID, PERUN_PARENT_GROUP_ID};
+					PERUN_VO_ID, PERUN_PARENT_GROUP_ID, UUID};
 
 			EntryMapper<Group> mapper = e -> {
 				if (!checkHasAttributes(e, new String[]{
-						PERUN_GROUP_ID, CN, DESCRIPTION, PERUN_UNIQUE_GROUP_NAME, PERUN_VO_ID }))
+						PERUN_GROUP_ID, CN, DESCRIPTION, PERUN_UNIQUE_GROUP_NAME, PERUN_VO_ID, UUID }))
 				{
 					return null;
 				}
@@ -526,8 +527,9 @@ public class PerunAdapterLdap extends PerunAdapterWithMappingServices implements
 				if (e.get(PERUN_PARENT_GROUP_ID) != null) {
 					parentGroupId = Long.valueOf(e.get(PERUN_PARENT_GROUP_ID).getString());
 				}
+				String uuid = e.get(UUID).getString();
 
-				return new Group(id, parentGroupId, name, description, uniqueName,null, voId);
+				return new Group(id, parentGroupId, name, description, uniqueName,uuid, voId);
 			};
 
 			result = connectorLdap.search(null, filter, SearchScope.SUBTREE, attributes, mapper);
