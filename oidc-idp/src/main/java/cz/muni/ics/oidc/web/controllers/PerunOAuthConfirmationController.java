@@ -61,10 +61,10 @@ public class PerunOAuthConfirmationController{
     }
 
     @RequestMapping(value = "/oauth/confirm_access", params = { "client_id" })
-    public String confirmAccess(Map<String, Object> model, HttpServletRequest req, Principal p,
-                                @ModelAttribute("authorizationRequest") AuthorizationRequest authRequest)
+    public String confirmAccess(Map<String, Object> model, HttpServletRequest req, Principal p)
     {
-        String result = oAuthConfirmationController.confimAccess(model, authRequest, p);
+        AuthorizationRequest authRequest = (AuthorizationRequest)model.get("authorizationRequest");
+        String result = oAuthConfirmationController.confirmAccess(model, p);
         if (result.equals(APPROVE) && !perunOidcConfig.getTheme().equalsIgnoreCase("default")) {
             model.remove("scopes");
             model.remove("claims");

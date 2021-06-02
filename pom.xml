@@ -37,38 +37,149 @@
 	</modules>
 
 	<properties>
-		<mitreid-version>1.3.3</mitreid-version>
+		<mitreid-cesnet-version>master-SNAPSHOT</mitreid-cesnet-version>
+		<servlet-api.version>2.5</servlet-api.version>
+		<jstl.version>1.2</jstl.version>
+		<apache-commons.version>3.9</apache-commons.version>
+		<jackson-dataformat-yml.verson>2.11.4</jackson-dataformat-yml.verson>
+		<mariadb-java-client.version>2.7.0</mariadb-java-client.version>
+		<apache-directory-api.version>2.0.1</apache-directory-api.version>
+		<janino.version>3.0.12</janino.version>
+		<logback.verison>1.2.3</logback.verison>
+		<jul-to-slf4j.version>1.7.30</jul-to-slf4j.version>
+		<shedlock.version>4.3.1</shedlock.version>
+		<javax-annotation-api.version>1.3.2</javax-annotation-api.version>
+		<jakarta-xml-bind-api.version>2.3.3</jakarta-xml-bind-api.version>
+		<jaxb-runtime.version>2.3.3</jaxb-runtime.version>
+		<jakarta-servlet-api.version>4.0.4</jakarta-servlet-api.version>
+		<aspectjweaver.version>1.9.6</aspectjweaver.version>
+		<spring-aop.version>4.3.22.RELEASE</spring-aop.version>
+		<!-- BUILD -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java-version>8</java-version>
 		<maven.compiler.source>${java-version}</maven.compiler.source>
 		<maven.compiler.target>${java-version}</maven.compiler.target>
 	</properties>
 
-	<!-- needed for Travis Continuous Integration to succeed when MITREid is not released 
 	<repositories>
 		<repository>
-			<id>acrab.ics.muni.cz</id>
-			<name>Maven Repository</name>
-			<url>https://acrab.ics.muni.cz/~makub/m2repo/</url>
-			<layout>default</layout>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
 		</repository>
 	</repositories>
-    -->
 
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<groupId>org.mitre</groupId>
+				<groupId>com.github.CESNET.OpenID-Connect-Java-Spring-Server</groupId>
 				<artifactId>openid-connect-parent</artifactId>
+				<version>${mitreid-cesnet-version}</version>
 				<type>pom</type>
-				<version>${mitreid-version}</version>
-				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.github.CESNET.OpenID-Connect-Java-Spring-Server</groupId>
+				<artifactId>openid-connect-server</artifactId>
+				<version>${mitreid-cesnet-version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.github.CESNET.OpenID-Connect-Java-Spring-Server</groupId>
+				<artifactId>openid-connect-server-webapp</artifactId>
+				<version>${mitreid-cesnet-version}</version>
+				<type>war</type>
+			</dependency>
+			<dependency>
+				<groupId>javax.servlet</groupId>
+				<artifactId>servlet-api</artifactId>
+				<version>${servlet-api.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>javax.servlet</groupId>
+				<artifactId>jstl</artifactId>
+				<version>${jstl.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-lang3</artifactId>
+				<version>${apache-commons.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.dataformat</groupId>
+				<artifactId>jackson-dataformat-yaml</artifactId>
+				<version>${jackson-dataformat-yml.verson}</version>
+			</dependency>
+			<!-- MySQL JDBC driver -->
+			<dependency>
+				<groupId>org.mariadb.jdbc</groupId>
+				<artifactId>mariadb-java-client</artifactId>
+				<version>${mariadb-java-client.version}</version>
+			</dependency>
+			<!-- LDAP -->
+			<dependency>
+				<groupId>org.apache.directory.api</groupId>
+				<artifactId>api-all</artifactId>
+				<version>${apache-directory-api.version}</version>
+			</dependency>
+			<!-- logging -->
+			<dependency>
+				<groupId>org.codehaus.janino</groupId>
+				<artifactId>janino</artifactId>
+				<version>${janino.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ch.qos.logback</groupId>
+				<artifactId>logback-classic</artifactId>
+				<version>${logback.verison}</version>
+				<exclusions>
+					<exclusion>
+						<groupId>org.slf4j</groupId>
+						<artifactId>slf4j-api</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>jul-to-slf4j</artifactId>
+				<version>${jul-to-slf4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.javacrumbs.shedlock</groupId>
+				<artifactId>shedlock-spring</artifactId>
+				<version>${shedlock.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.javacrumbs.shedlock</groupId>
+				<artifactId>shedlock-provider-jdbc-template</artifactId>
+				<version>${shedlock.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>javax.annotation</groupId>
+				<artifactId>javax.annotation-api</artifactId>
+				<version>${javax-annotation-api.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>jakarta.xml.bind</groupId>
+				<artifactId>jakarta.xml.bind-api</artifactId>
+				<version>${jakarta-xml-bind-api.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.glassfish.jaxb</groupId>
+				<artifactId>jaxb-runtime</artifactId>
+				<version>${jaxb-runtime.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>jakarta.servlet</groupId>
+				<artifactId>jakarta.servlet-api</artifactId>
+				<version>${jakarta-servlet-api.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-aop</artifactId>
+				<version>${spring-aop.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.aspectj</groupId>
+				<artifactId>aspectjweaver</artifactId>
+				<version>${aspectjweaver.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
