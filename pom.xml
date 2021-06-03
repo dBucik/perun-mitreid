@@ -37,7 +37,10 @@
 	</modules>
 
 	<properties>
-		<mitreid-cesnet-version>master-SNAPSHOT</mitreid-cesnet-version>
+		<mitreid-cesnet.version>master-SNAPSHOT</mitreid-cesnet.version>
+		<mitreid-cesnet-parent.version>${mitreid-cesnet.version}</mitreid-cesnet-parent.version>
+		<mitreid-cesnet-server-webapp.version>${mitreid-cesnet.version}</mitreid-cesnet-server-webapp.version>
+		<mitreid-cesnet-server.version>${mitreid-cesnet.version}</mitreid-cesnet-server.version>
 		<servlet-api.version>2.5</servlet-api.version>
 		<jstl.version>1.2</jstl.version>
 		<apache-commons.version>3.9</apache-commons.version>
@@ -73,18 +76,18 @@
 			<dependency>
 				<groupId>com.github.CESNET.OpenID-Connect-Java-Spring-Server</groupId>
 				<artifactId>openid-connect-parent</artifactId>
-				<version>${mitreid-cesnet-version}</version>
+				<version>${mitreid-cesnet-parent.version}</version>
 				<type>pom</type>
 			</dependency>
 			<dependency>
 				<groupId>com.github.CESNET.OpenID-Connect-Java-Spring-Server</groupId>
 				<artifactId>openid-connect-server</artifactId>
-				<version>${mitreid-cesnet-version}</version>
+				<version>${mitreid-cesnet-server.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.github.CESNET.OpenID-Connect-Java-Spring-Server</groupId>
 				<artifactId>openid-connect-server-webapp</artifactId>
-				<version>${mitreid-cesnet-version}</version>
+				<version>${mitreid-cesnet-server-webapp.version}</version>
 				<type>war</type>
 			</dependency>
 			<dependency>
