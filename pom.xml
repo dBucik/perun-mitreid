@@ -56,7 +56,7 @@
 		<jaxb-runtime.version>2.3.3</jaxb-runtime.version>
 		<jakarta-servlet-api.version>4.0.4</jakarta-servlet-api.version>
 		<aspectjweaver.version>1.9.6</aspectjweaver.version>
-		<spring-aop.version>4.3.22.RELEASE</spring-aop.version>
+		<spring-aop.version>4.3.30.RELEASE</spring-aop.version>
 		<!-- BUILD -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java-version>8</java-version>
