@@ -36,19 +36,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
-import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.*;
+import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.AARC_IDP_HINT;
 import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.AUTHORIZE_REQ_PATTERN;
 import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.EFILTER_PREFIX;
 import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.FILTER_PREFIX;
 import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.IDP_ENTITY_ID_PREFIX;
+import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.PARAM_ACR_VALUES;
 import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.PARAM_AUTHN_CONTEXT_CLASS_REF;
+import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.PARAM_CLIENT_ID;
 import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.PARAM_FORCE_AUTHN;
 import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.PARAM_LOGGED_OUT;
+import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.PARAM_PROMPT;
+import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.PARAM_STATE;
 import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.PARAM_TARGET;
 import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.PARAM_WAYF_EFILTER;
 import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.PARAM_WAYF_FILTER;
 import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.PARAM_WAYF_IDP;
 import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.REFEDS_MFA;
+import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.SHIB_AUTHN_CONTEXT_CLASS;
+import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.SHIB_AUTHN_CONTEXT_METHOD;
+import static cz.muni.ics.oidc.server.filters.PerunFilterConstants.SHIB_IDENTITY_PROVIDER;
 import static org.mitre.oauth2.model.RegisteredClientFields.CLIENT_ID;
 
 /**
@@ -82,8 +89,7 @@ public class PerunAuthenticationFilter extends AbstractPreAuthenticatedProcessin
 
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-			throws IOException, ServletException
-	{
+			throws IOException, ServletException {
 		HttpServletRequest req = (HttpServletRequest) request;
 		HttpServletResponse res = (HttpServletResponse) response;
 
@@ -92,10 +98,10 @@ public class PerunAuthenticationFilter extends AbstractPreAuthenticatedProcessin
 		String redirectURL = null;
 		if (this.mfaRequestedAndNotPerformedYet(req)) {
 			redirectURL = this.buildMfaAuthenticationUrl(req, clientId);
-		} else if (req.getParameter(PARAM_FORCE_AUTHN) != null) {
-			redirectURL = this.buildForceAuthenticationUrl(req, clientId);
-		} else if (principal == null || principal.getExtLogin() == null || principal.getExtSourceName() == null) {
+		} else if (hasEmptyPrincipal(principal)) {
 			redirectURL = this.buildAuthenticationUrl(req, clientId);
+		} else if (shouldHandlePrompt(req)) {
+			redirectURL = buildAuthenticationUrlForPrompt(req, clientId);
 		}
 
 		if (redirectURL != null) {
@@ -363,18 +369,29 @@ public class PerunAuthenticationFilter extends AbstractPreAuthenticatedProcessin
 		return this.buildLoginURL(req, clientId, true, true);
 	}
 
-	private String buildForceAuthenticationUrl(HttpServletRequest req, String clientId)
-			throws UnsupportedEncodingException
-	{
-		log.debug("{} - build login URL with forced login", FILTER_NAME);
-		return this.buildLoginURL(req, clientId, true, false);
-	}
-
 	private String buildAuthenticationUrl(HttpServletRequest req, String clientId)
 			throws UnsupportedEncodingException
 	{
 		log.debug("{} - build login URL with no additional params", FILTER_NAME);
 		return this.buildLoginURL(req, clientId, false, false);
+	}
+
+
+	private boolean hasEmptyPrincipal(PerunPrincipal principal) {
+		return principal == null || principal.getExtLogin() == null || principal.getExtSourceName() == null;
+	}
+
+	private boolean shouldHandlePrompt(HttpServletRequest req) {
+		return !StringUtils.hasText(req.getParameter(PARAM_LOGGED_OUT))
+				&& StringUtils.hasText(req.getParameter(PARAM_PROMPT));
+	}
+
+	private String buildAuthenticationUrlForPrompt(HttpServletRequest req, String clientId)
+			throws UnsupportedEncodingException
+	{
+		String prompt = req.getParameter(PARAM_PROMPT);
+		boolean force = ("login".equalsIgnoreCase(prompt) || "select_account".equalsIgnoreCase(prompt));
+		return buildLoginURL(req, clientId, force, true);
 	}
 
 }

@@ -23,6 +23,7 @@ public class PerunFilterConstants {
     public static final String PARAM_TARGET = "target";
     public static final String PARAM_LOGGED_OUT = "loggedOut";
     public static final String PARAM_FORCE_AUTHN = "forceAuthn";
+    public static final String PARAM_PROMPT = "prompt";
     public static final String PARAM_REASON = "reason";
     public static final String PARAM_AUTHN_CONTEXT_CLASS_REF = "authnContextClassRef";
     public static final String PARAM_ACCEPTED = "accepted";
