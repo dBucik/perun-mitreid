@@ -324,5 +324,9 @@ public interface PerunAdapterMethods {
 	 * 	User is member of at least one specified env GROUP.
 	 * 	Returns FALSE otherwise.
 	 */
-	boolean isValidMemberInGroupsAndVos(Long userId, Set<Long> mandatoryVos, Set<Long> mandatoryGroups, Set<Long> envVos, Set<Long> envGroups);
+	boolean isValidMemberInGroupsAndVos(Long userId, Set<Long> mandatoryVos, Set<Long> mandatoryGroups,
+										Set<Long> envVos, Set<Long> envGroups);
+
+	boolean isUserInVo(Long userId, String voShortName);
+
 }

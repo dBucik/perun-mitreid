@@ -490,6 +490,33 @@ public class PerunAdapterLdap extends PerunAdapterWithMappingServices implements
 		return PerunAdapter.decideAccess(foundVoIds, foundGroupIds, mandatoryVos, mandatoryGroups, envVos, envGroups);
 	}
 
+	@Override
+	public boolean isUserInVo(Long userId, String voShortName) {
+		if (userId == null) {
+			throw new IllegalArgumentException("No userId");
+		} else if (!StringUtils.hasText(voShortName)) {
+			throw new IllegalArgumentException("No voShortName");
+		}
+
+		String uniqueMember = getDnPrefixForUserId(userId) + ',' + this.connectorLdap.getBaseDN();
+		FilterBuilder filter = and(equal(OBJECT_CLASS, PERUN_VO), equal(UNIQUE_MEMBER, uniqueMember), equal(O, voShortName));
+		String[] attributes = new String[] { PERUN_VO_ID, O, DESCRIPTION };
+		EntryMapper<Vo> mapper = e -> {
+			if (!checkHasAttributes(e, attributes)) {
+				return null;
+			}
+
+			Long id = Long.valueOf(e.get(PERUN_VO_ID).getString());
+			String shortNameVo = e.get(O).getString();
+			String name = e.get(DESCRIPTION).getString();
+
+			return new Vo(id, name, shortNameVo);
+		};
+
+		Vo vo = connectorLdap.searchFirst(null, filter, SearchScope.ONELEVEL, attributes, mapper);
+		return vo != null;
+	}
+
 	private List<Group> getGroups(Collection<?> objects, String objectAttribute) {
 		List<Group> result;
 		if (objects == null || objects.size() <= 0) {

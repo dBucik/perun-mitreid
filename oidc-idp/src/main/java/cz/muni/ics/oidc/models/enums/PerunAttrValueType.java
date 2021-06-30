@@ -1,6 +1,7 @@
 package cz.muni.ics.oidc.models.enums;
 
 public enum PerunAttrValueType {
+
 	STRING,
 	INTEGER,
 	BOOLEAN,
@@ -22,6 +23,6 @@ public enum PerunAttrValueType {
 			case "map_key_value": return MAP_KEY_VALUE;
 			default: return STRING;
 		}
-
 	}
+
 }

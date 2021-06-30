@@ -39,7 +39,8 @@ public class PerunUnapprovedController {
 
     public static final String UNAPPROVED_MAPPING = "/unapproved";
     public static final String UNAPPROVED_SPECIFIC_MAPPING = "/unapproved_spec";
-    public static final String UNAPPROVED_IS_CESNET_ELIGIBLE_MAPPING = "/unapproved_ice";
+    public static final String UNAPPROVED_IS_CESNET_ELIGIBLE_MAPPING = "/unapprovedIce";
+    public static final String UNAPPROVED_ENSURE_VO_MAPPING = "/unapprovedEnsureVo";
 
     public static final String REASON_NOT_SET = "notSet";
     public static final String REASON_EXPIRED = "expired";
@@ -47,6 +48,9 @@ public class PerunUnapprovedController {
     private static final String OUT_HEADER = "outHeader";
     private static final String OUT_MESSAGE = "outMessage";
     private static final String OUT_CONTACT_P = "outContactP";
+
+    private static final String ENSURE_VO_HDR = "403_ensure_vo_hdr";
+    private static final String ENSURE_VO_MSG = "403_ensure_vo_msg";
 
     private static final String ICE_NOT_SET_HDR = "403_isCesnetEligible_notSet_hdr";
     private static final String ICE_NOT_SET_MSG = "403_isCesnetEligible_notSet_msg";
@@ -121,8 +125,8 @@ public class PerunUnapprovedController {
 
     @GetMapping(value = UNAPPROVED_IS_CESNET_ELIGIBLE_MAPPING)
     public String showUnapprovedIsCesnetEligible(ServletRequest req, Map<String, Object> model,
-                                     @RequestParam(value = PARAM_TARGET) String target,
-                                     @RequestParam(value = PARAM_REASON) String reason) {
+                                                 @RequestParam(value = PARAM_TARGET) String target,
+                                                 @RequestParam(value = PARAM_REASON) String reason) {
 
         ControllerUtils.setPageOptions(model, (HttpServletRequest) req, localization, htmlClasses, perunOidcConfig);
 
@@ -143,6 +147,22 @@ public class PerunUnapprovedController {
 
         header = replace(header, TARGET_URL_PLACEHOLDER, target);
         message = replace(message, TARGET_URL_PLACEHOLDER, target);
+
+        model.put(OUT_HEADER, header);
+        model.put(OUT_MESSAGE, message);
+        model.put(OUT_CONTACT_P, contactPText);
+        model.put(CONTACT_MAIL, perunOidcConfig.getEmailContact());
+
+        return "unapproved_spec";
+    }
+
+    @GetMapping(value = UNAPPROVED_ENSURE_VO_MAPPING)
+    public String showUnapprovedEnsureVo(ServletRequest req, Map<String, Object> model) {
+        ControllerUtils.setPageOptions(model, (HttpServletRequest) req, localization, htmlClasses, perunOidcConfig);
+
+        String header = getText(model, ENSURE_VO_HDR);
+        String message = getText(model, ENSURE_VO_MSG);
+        String contactPText = getText(model, CONTACT_LANG_PROP_KEY);
 
         model.put(OUT_HEADER, header);
         model.put(OUT_MESSAGE, message);

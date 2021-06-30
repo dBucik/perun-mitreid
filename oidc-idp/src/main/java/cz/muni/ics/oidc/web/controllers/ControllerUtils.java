@@ -11,6 +11,7 @@ import cz.muni.ics.oidc.web.WebHtmlClasses;
 import cz.muni.ics.oidc.web.langs.Localization;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
+import org.eclipse.persistence.tools.PackageRenamer;
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.model.UserInfo;
@@ -24,6 +25,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -202,4 +204,38 @@ public class ControllerUtils {
 		}
 		return uriBuilder.build().toString();
 	}
+
+	public static String createUrl(String base, Map<String, String> params) {
+		String url = base;
+		if (!params.isEmpty()) {
+			url += '?';
+			StringBuilder sb = new StringBuilder(url);
+			Iterator<Map.Entry<String, String>> it = params.entrySet().iterator();
+			if (it.hasNext()) {
+				while (it.hasNext()) {
+					Map.Entry<String, String> param = it.next();
+					try {
+						if (param.getKey() != null && param.getValue() != null) {
+							String encodedValue = URLEncoder.encode(param.getValue(), StandardCharsets.UTF_8.toString());
+							sb.append(param.getKey()).append('=').append(encodedValue);
+						}
+					} catch (UnsupportedEncodingException e) {
+						//TODO: handle
+					}
+					if (it.hasNext()) {
+						sb.append('&');
+					}
+				}
+				url = sb.toString();
+			}
+		}
+		return url;
+	}
+
+	public static String constructRequestUrl(PerunOidcConfig oidcConfig, String newPath) {
+		String url = oidcConfig.getConfigBean().getIssuer();
+		newPath = (url.endsWith("/") ? newPath.replaceFirst("/", "") : newPath);
+		return url + newPath;
+	}
+
 }

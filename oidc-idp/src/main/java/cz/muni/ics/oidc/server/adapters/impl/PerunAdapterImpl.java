@@ -375,4 +375,18 @@ public class PerunAdapterImpl extends PerunAdapter {
             }
         }
     }
+
+    @Override
+    public boolean isUserInVo(Long userId, String voShortName) {
+        try {
+            return this.getAdapterPrimary().isUserInVo(userId, voShortName);
+        } catch (UnsupportedOperationException e) {
+            if (this.isCallFallback()) {
+                return this.getAdapterFallback().isUserInVo(userId, voShortName);
+            } else {
+                throw e;
+            }
+        }
+    }
+
 }

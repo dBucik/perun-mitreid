@@ -227,4 +227,6 @@ public interface PerunAdapterMethodsRpc {
 	 */
 	PerunAttribute getResourceAttribute(Long resourceId, String attrToFetch);
 
+	boolean hasApplicationForm(String voShortName);
+
 }

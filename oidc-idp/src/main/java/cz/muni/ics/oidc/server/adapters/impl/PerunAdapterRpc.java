@@ -172,7 +172,7 @@ public class PerunAdapterRpc extends PerunAdapterWithMappingServices implements 
 		// filter groups only if their VO is in the allowed VOs and if they have registration form
 		List<Group> allowedGroups = getAllowedGroups(facility);
 		List<Group> groupsForRegistration = allowedGroups.stream()
-				.filter(group -> vosForRegistration.containsKey(group.getVoId()) && getApplicationForm(group))
+				.filter(group -> vosForRegistration.containsKey(group.getVoId()) && hasApplicationForm(group))
 				.collect(Collectors.toList());
 
 		// create map for processing
@@ -199,7 +199,7 @@ public class PerunAdapterRpc extends PerunAdapterWithMappingServices implements 
 
 		if (!allowedGroups.isEmpty()) {
 			for (Group group : allowedGroups) {
-				if (getApplicationForm(group)) {
+				if (hasApplicationForm(group)) {
 					return true;
 				}
 			}
@@ -872,6 +872,46 @@ public class PerunAdapterRpc extends PerunAdapterWithMappingServices implements 
 		return PerunAdapter.decideAccess(foundVoIds, foundGroupIds, mandatoryVos, mandatoryGroups, envVos, envGroups);
 	}
 
+	@Override
+	public boolean isUserInVo(Long userId, String voShortName) {
+		if (userId == null) {
+			throw new IllegalArgumentException("No userId");
+		} else if (!StringUtils.hasText(voShortName)) {
+			throw new IllegalArgumentException("No voShortName");
+		}
+
+		Vo vo = getVoByShortName(voShortName);
+		if (vo == null || vo.getId() == null) {
+			log.debug("isUserInVo - No VO found, returning false");
+			return false;
+		}
+		try {
+			Member member = getMemberByUser(userId, vo.getId());
+			if (member == null) {
+				log.debug("isUserInVo - No member found, returning false");
+				return false;
+			}
+			return VALID.equals(member.getStatus());
+		} catch (Exception e) {
+			log.debug("isUserInVo - caught exception, probably user is not a member");
+			log.trace("{}", e.getMessage(), e);
+			return false;
+		}
+	}
+
+	@Override
+	public boolean hasApplicationForm(String voShortName) {
+		if (!this.connectorRpc.isEnabled()) {
+			return false;
+		}
+
+		Vo vo = getVoByShortName(voShortName);
+		if (vo == null || vo.getId() == null) {
+			return false;
+		}
+		return hasApplicationForm(vo.getId());
+	}
+
 	private Member getMemberByUser(Long userId, Long voId) {
 		if (!this.connectorRpc.isEnabled()) {
 			return null;
@@ -1060,7 +1100,7 @@ public class PerunAdapterRpc extends PerunAdapterWithMappingServices implements 
 		return result;
 	}
 
-	private boolean getApplicationForm(Group group) {
+	private boolean hasApplicationForm(Group group) {
 		if (!this.connectorRpc.isEnabled()) {
 			return false;
 		}
@@ -1069,8 +1109,8 @@ public class PerunAdapterRpc extends PerunAdapterWithMappingServices implements 
 		map.put("group", group.getId());
 		try {
 			if (group.getName().equalsIgnoreCase("members")) {
-				log.debug("getApplicationForm({}) continues to call regForm for VO {}", group, group.getVoId());
-				return getApplicationForm(group.getVoId());
+				log.debug("hasApplicationForm({}) continues to call regForm for VO {}", group, group.getVoId());
+				return hasApplicationForm(group.getVoId());
 			} else {
 				connectorRpc.post(REGISTRAR_MANAGER, "getApplicationForm", map);
 			}
@@ -1083,7 +1123,7 @@ public class PerunAdapterRpc extends PerunAdapterWithMappingServices implements 
 		return true;
 	}
 
-	private boolean getApplicationForm(Long voId) {
+	private boolean hasApplicationForm(Long voId) {
 		if (!this.connectorRpc.isEnabled()) {
 			return false;
 		}
