@@ -3,6 +3,7 @@ package cz.muni.ics.oidc.server;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jwt.JWT;
@@ -41,24 +42,27 @@ public class PerunAccessTokenEnhancer implements TokenEnhancer {
 
     private final static Logger log = LoggerFactory.getLogger(PerunAccessTokenEnhancer.class);
 
-    @Autowired
-    private ConfigurationPropertiesBean configBean;
-
-    @Autowired
-    private JWTSigningAndValidationService jwtService;
-
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-    @Autowired
-    private ClientDetailsEntityService clientService;
-
-    @Autowired
-    private UserInfoService userInfoService;
-
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-    @Autowired
-    private OIDCTokenService connectTokenService;
+    private final ConfigurationPropertiesBean configBean;
+    private final JWTSigningAndValidationService jwtService;
+    private final ClientDetailsEntityService clientService;
+    private final UserInfoService userInfoService;
+    private final OIDCTokenService connectTokenService;
 
     private AccessTokenClaimsModifier accessTokenClaimsModifier;
+
+    @Autowired
+    public PerunAccessTokenEnhancer(ConfigurationPropertiesBean configBean,
+                                    JWTSigningAndValidationService jwtService,
+                                    ClientDetailsEntityService clientService,
+                                    UserInfoService userInfoService,
+                                    OIDCTokenService connectTokenService)
+    {
+        this.configBean = configBean;
+        this.jwtService = jwtService;
+        this.clientService = clientService;
+        this.userInfoService = userInfoService;
+        this.connectTokenService = connectTokenService;
+    }
 
     public void setAccessTokenClaimsModifier(AccessTokenClaimsModifier accessTokenClaimsModifier) {
         this.accessTokenClaimsModifier = accessTokenClaimsModifier;
@@ -102,9 +106,8 @@ public class PerunAccessTokenEnhancer implements TokenEnhancer {
         JWTClaimsSet claims = builder.build();
 
         JWSAlgorithm signingAlg = jwtService.getDefaultSigningAlgorithm();
-        JWSHeader header = new JWSHeader(signingAlg, null, null, null, null, null, null, null, null, null,
-                jwtService.getDefaultSignerKeyId(),
-                null, null);
+        JWSHeader header = new JWSHeader(signingAlg, JOSEObjectType.JWT, null, null, null, null, null, null, null, null,
+                jwtService.getDefaultSignerKeyId(), true, null, null);
         SignedJWT signed = new SignedJWT(header, claims);
 
         jwtService.signJwt(signed);
