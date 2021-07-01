@@ -368,14 +368,14 @@
 		<security:intercept-url pattern="/**" access="permitAll"/>
 		<security:custom-filter ref="perunAuthenticationFilter" after="PRE_AUTH_FILTER"/>
 		<security:custom-filter ref="callPerunFiltersFilter" after="BASIC_AUTH_FILTER"/>
-		<security:custom-filter ref="mdcFilter" before="FIRST"/>
+		<security:custom-filter ref="mdcMuFilter" before="FIRST"/>
 	</security:http>
 
 	<security:authentication-manager id="authenticationManager">
 		<security:authentication-provider ref="preauthAuthProvider"/>
 	</security:authentication-manager>
 
-	<bean id="mdcFilter" class="cz.muni.ics.oidc.server.filters.impl.MDCFilter"/>
+	<bean id="mdcMuFilter" class="cz.muni.ics.oidc.server.filters.impl.MultiMDCFilter"/>
 
 	<!-- the user must be pre-authenticated by Apache -->
 	<bean id="preauthAuthProvider"
